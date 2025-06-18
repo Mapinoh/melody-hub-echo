@@ -8,6 +8,11 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { AudioProvider } from "@/hooks/useAudioPlayer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Upload from "./pages/Upload";
+import Profile from "./pages/Profile";
+import Artist from "./pages/Artist";
+import Playlists from "./pages/Playlists";
+import TrackDetail from "./pages/TrackDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +29,31 @@ const App = () => (
               <Route path="/" element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/upload" element={
+                <ProtectedRoute>
+                  <Upload />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/playlists" element={
+                <ProtectedRoute>
+                  <Playlists />
+                </ProtectedRoute>
+              } />
+              <Route path="/artist/:artistId" element={
+                <ProtectedRoute>
+                  <Artist />
+                </ProtectedRoute>
+              } />
+              <Route path="/track/:trackId" element={
+                <ProtectedRoute>
+                  <TrackDetail />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />

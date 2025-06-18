@@ -1,8 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, Heart, Share, MoreHorizontal, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { useSupabaseTracks } from '@/hooks/useSupabaseTracks';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface Track {
   id: string;
@@ -30,12 +33,18 @@ export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
   track,
   className,
 }) => {
-  const { currentTrack, isPlaying, play, pause } = useAudioPlayer();
+  const { currentTrack, isPlaying, play, pause, recordPlay } = useAudioPlayer();
+  const { likeTrack } = useSupabaseTracks();
+  const { user } = useAuth();
+  const [isLiked, setIsLiked] = useState(false);
   
   const isCurrentTrack = currentTrack?.id === track.id;
   const isCurrentlyPlaying = isCurrentTrack && isPlaying;
 
-  const handlePlayPause = () => {
+  const handlePlayPause = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     const trackData = {
       id: track.id,
       title: track.title,
@@ -50,6 +59,53 @@ export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
       pause();
     } else {
       play(trackData);
+      // Record play after starting
+      if (recordPlay) {
+        recordPlay({
+          trackId: track.id,
+          duration: 0,
+          completed: false
+        });
+      }
+    }
+  };
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      toast.error('Please log in to like tracks');
+      return;
+    }
+
+    try {
+      likeTrack(track.id);
+      setIsLiked(!isLiked);
+      toast.success(isLiked ? 'Removed from liked tracks' : 'Added to liked tracks');
+    } catch (error) {
+      toast.error('Failed to update like status');
+    }
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const shareData = {
+      title: `${track.title} by ${track.artist}`,
+      url: `${window.location.origin}/track/${track.id}`,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (error) {
+        // User cancelled sharing
+      }
+    } else {
+      await navigator.clipboard.writeText(shareData.url);
+      toast.success('Link copied to clipboard');
     }
   };
 
@@ -102,10 +158,19 @@ export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
 
         {/* Actions */}
         <div className="flex items-center space-x-1 md:space-x-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="p-1.5 md:p-2 text-gray-400 hover:text-white transition-colors touch-manipulation">
-            <Heart size={14} className="md:w-4 md:h-4" />
+          <button 
+            onClick={handleLike}
+            className={cn(
+              "p-1.5 md:p-2 transition-colors touch-manipulation",
+              isLiked ? "text-red-500 hover:text-red-400" : "text-gray-400 hover:text-white"
+            )}
+          >
+            <Heart size={14} className="md:w-4 md:h-4" fill={isLiked ? 'currentColor' : 'none'} />
           </button>
-          <button className="p-1.5 md:p-2 text-gray-400 hover:text-white transition-colors touch-manipulation">
+          <button 
+            onClick={handleShare}
+            className="p-1.5 md:p-2 text-gray-400 hover:text-white transition-colors touch-manipulation"
+          >
             <Share size={14} className="md:w-4 md:h-4" />
           </button>
           <button className="p-1.5 md:p-2 text-gray-400 hover:text-white transition-colors touch-manipulation">
