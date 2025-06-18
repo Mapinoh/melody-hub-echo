@@ -99,10 +99,19 @@ export const useSupabaseTracks = () => {
 
       if (historyError) throw historyError;
 
+      // Get current play count and increment it
+      const { data: currentTrack, error: fetchError } = await supabase
+        .from('tracks')
+        .select('play_count')
+        .eq('id', trackId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       // Update play count
       const { error: countError } = await supabase
         .from('tracks')
-        .update({ play_count: supabase.sql`play_count + 1` })
+        .update({ play_count: (currentTrack?.play_count || 0) + 1 })
         .eq('id', trackId);
 
       if (countError) throw countError;
