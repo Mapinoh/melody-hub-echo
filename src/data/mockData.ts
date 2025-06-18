@@ -3,7 +3,7 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
-  duration: string;
+  duration: number; // Changed to number (seconds)
   plays: string;
   imageUrl?: string;
   url?: string;
@@ -20,12 +20,18 @@ export interface Artist {
   topTracks?: Track[];
 }
 
+// Helper function to convert duration string to seconds
+const durationToSeconds = (duration: string): number => {
+  const [minutes, seconds] = duration.split(':').map(Number);
+  return minutes * 60 + seconds;
+};
+
 export const mockTracks: Track[] = [
   {
     id: '1',
     title: 'Midnight Dreams',
     artist: 'Luna Artist',
-    duration: '3:24',
+    duration: durationToSeconds('3:24'),
     plays: '1.2M',
     genre: 'Electronic',
     imageUrl: '/placeholder.svg',
@@ -35,7 +41,7 @@ export const mockTracks: Track[] = [
     id: '2',
     title: 'Neon Lights',
     artist: 'Electric Soul',
-    duration: '2:58',
+    duration: durationToSeconds('2:58'),
     plays: '890K',
     genre: 'Synthwave',
     imageUrl: '/placeholder.svg',
@@ -45,7 +51,7 @@ export const mockTracks: Track[] = [
     id: '3',
     title: 'Ocean Waves',
     artist: 'Peaceful Mind',
-    duration: '4:12',
+    duration: durationToSeconds('4:12'),
     plays: '2.1M',
     genre: 'Ambient',
     imageUrl: '/placeholder.svg',
@@ -55,7 +61,7 @@ export const mockTracks: Track[] = [
     id: '4',
     title: 'City Nights',
     artist: 'Urban Beats',
-    duration: '3:45',
+    duration: durationToSeconds('3:45'),
     plays: '750K',
     genre: 'Hip Hop',
     imageUrl: '/placeholder.svg',
@@ -65,7 +71,7 @@ export const mockTracks: Track[] = [
     id: '5',
     title: 'Golden Hour',
     artist: 'Sunset Vibes',
-    duration: '3:18',
+    duration: durationToSeconds('3:18'),
     plays: '1.5M',
     genre: 'Indie Pop',
     imageUrl: '/placeholder.svg',
@@ -75,7 +81,7 @@ export const mockTracks: Track[] = [
     id: '6',
     title: 'Starlight',
     artist: 'Cosmic Journey',
-    duration: '4:05',
+    duration: durationToSeconds('4:05'),
     plays: '623K',
     genre: 'Space Rock',
     imageUrl: '/placeholder.svg',
@@ -85,7 +91,7 @@ export const mockTracks: Track[] = [
     id: '7',
     title: 'Thunder Storm',
     artist: 'Nature Sounds',
-    duration: '5:12',
+    duration: durationToSeconds('5:12'),
     plays: '445K',
     genre: 'Ambient',
     imageUrl: '/placeholder.svg',
@@ -95,7 +101,7 @@ export const mockTracks: Track[] = [
     id: '8',
     title: 'Digital Love',
     artist: 'Cyber Dreams',
-    duration: '3:33',
+    duration: durationToSeconds('3:33'),
     plays: '1.8M',
     genre: 'Electronic',
     imageUrl: '/placeholder.svg',

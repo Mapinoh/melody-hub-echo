@@ -8,7 +8,7 @@ interface Track {
   id: string;
   title: string;
   artist: string;
-  duration: string;
+  duration: number; // Changed to number (seconds)
   plays: string;
   imageUrl?: string;
   url?: string;
@@ -18,6 +18,13 @@ interface EnhancedTrackCardProps {
   track: Track;
   className?: string;
 }
+
+// Helper function to format duration from seconds to MM:SS
+const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
 export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
   track,
@@ -33,7 +40,7 @@ export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
       id: track.id,
       title: track.title,
       artist: track.artist,
-      duration: parseInt(track.duration.split(':')[0]) * 60 + parseInt(track.duration.split(':')[1]),
+      duration: track.duration,
       url: track.url,
       imageUrl: track.imageUrl,
       plays: track.plays,
@@ -90,7 +97,7 @@ export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
           {track.plays}
         </div>
         <div className="text-gray-400 text-xs md:text-sm">
-          {track.duration}
+          {formatDuration(track.duration)}
         </div>
 
         {/* Actions */}
