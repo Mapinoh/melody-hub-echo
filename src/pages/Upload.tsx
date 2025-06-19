@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { SharedLayout } from '@/components/SharedLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -114,111 +114,115 @@ const Upload = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Please log in to upload tracks</div>
-      </div>
+      <SharedLayout showMusicPlayer={false}>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-white text-xl">Please log in to upload tracks</div>
+        </div>
+      </SharedLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
-      <div className="max-w-2xl mx-auto">
-        <Card className="bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Music className="w-6 h-6" />
-              Upload New Track
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="title" className="text-gray-200">Track Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="bg-gray-700 border-gray-600 text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description" className="text-gray-200">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="bg-gray-700 border-gray-600 text-white"
-                  rows={4}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="genre" className="text-gray-200">Genre</Label>
-                <Input
-                  id="genre"
-                  value={formData.genre}
-                  onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
-                  className="bg-gray-700 border-gray-600 text-white"
-                  placeholder="Hip-Hop, Pop, Rock, etc."
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="audio" className="text-gray-200">Audio File (MP3, WAV)</Label>
-                <Input
-                  id="audio"
-                  type="file"
-                  accept=".mp3,.wav"
-                  onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
-                  className="bg-gray-700 border-gray-600 text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="cover" className="text-gray-200">Cover Art (Optional)</Label>
-                <Input
-                  id="cover"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setCoverArt(e.target.files?.[0] || null)}
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-              </div>
-
-              {isUploading && (
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
+    <SharedLayout>
+      <div className="p-4 pb-24">
+        <div className="max-w-2xl mx-auto">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Music className="w-6 h-6" />
+                Upload New Track
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <Label htmlFor="title" className="text-gray-200">Track Title</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
                 </div>
-              )}
 
-              <Button
-                type="submit"
-                disabled={isUploading || !audioFile}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                {isUploading ? (
-                  <span className="flex items-center gap-2">
-                    <UploadIcon className="w-4 h-4 animate-spin" />
-                    Uploading... {uploadProgress}%
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <UploadIcon className="w-4 h-4" />
-                    Upload Track
-                  </span>
+                <div>
+                  <Label htmlFor="description" className="text-gray-200">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    rows={4}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="genre" className="text-gray-200">Genre</Label>
+                  <Input
+                    id="genre"
+                    value={formData.genre}
+                    onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="Hip-Hop, Pop, Rock, etc."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="audio" className="text-gray-200">Audio File (MP3, WAV)</Label>
+                  <Input
+                    id="audio"
+                    type="file"
+                    accept=".mp3,.wav"
+                    onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="cover" className="text-gray-200">Cover Art (Optional)</Label>
+                  <Input
+                    id="cover"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setCoverArt(e.target.files?.[0] || null)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+
+                {isUploading && (
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
                 )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+
+                <Button
+                  type="submit"
+                  disabled={isUploading || !audioFile}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
+                  {isUploading ? (
+                    <span className="flex items-center gap-2">
+                      <UploadIcon className="w-4 h-4 animate-spin" />
+                      Uploading... {uploadProgress}%
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <UploadIcon className="w-4 h-4" />
+                      Upload Track
+                    </span>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </SharedLayout>
   );
 };
 
