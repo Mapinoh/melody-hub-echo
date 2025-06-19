@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ResponsiveSidebar } from '@/components/ResponsiveSidebar';
 import { Header } from '@/components/Header';
 import { EnhancedMusicPlayer } from '@/components/EnhancedMusicPlayer';
@@ -8,6 +8,16 @@ import { EnhancedTrackCard } from '@/components/EnhancedTrackCard';
 import { mockTracks } from '@/data/mockData';
 
 const Index = () => {
+  const [isFullScreenPlayerOpen, setIsFullScreenPlayerOpen] = useState(false);
+
+  const handleOpenFullScreenPlayer = () => {
+    setIsFullScreenPlayerOpen(true);
+  };
+
+  const handleCloseFullScreenPlayer = () => {
+    setIsFullScreenPlayerOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 flex w-full">
       {/* Sidebar */}
@@ -63,7 +73,7 @@ const Index = () => {
                     key={track.id} 
                     track={{
                       ...track,
-                      duration: Math.floor(Math.random() * 240) + 120 // Random duration in seconds
+                      duration: Math.floor(Math.random() * 240) + 120
                     }} 
                   />
                 ))}
@@ -109,7 +119,7 @@ const Index = () => {
                     key={track.id} 
                     track={{
                       ...track,
-                      duration: Math.floor(Math.random() * 240) + 120 // Random duration in seconds
+                      duration: Math.floor(Math.random() * 240) + 120
                     }} 
                   />
                 ))}
@@ -119,8 +129,11 @@ const Index = () => {
         </main>
 
         {/* Music Player */}
-        <EnhancedMusicPlayer />
-        <FullScreenPlayer />
+        <EnhancedMusicPlayer onOpenFullScreen={handleOpenFullScreenPlayer} />
+        <FullScreenPlayer 
+          isOpen={isFullScreenPlayerOpen} 
+          onClose={handleCloseFullScreenPlayer} 
+        />
       </div>
     </div>
   );
