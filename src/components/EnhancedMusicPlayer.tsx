@@ -4,7 +4,11 @@ import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, Heart, Ch
 import { cn } from '@/lib/utils';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 
-export const EnhancedMusicPlayer: React.FC = () => {
+interface EnhancedMusicPlayerProps {
+  onOpenFullScreen?: () => void;
+}
+
+export const EnhancedMusicPlayer: React.FC<EnhancedMusicPlayerProps> = ({ onOpenFullScreen }) => {
   const {
     currentTrack,
     isPlaying,
@@ -38,7 +42,10 @@ export const EnhancedMusicPlayer: React.FC = () => {
       {/* Mobile Mini Player */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 p-3 z-50">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex-shrink-0">
+          <div 
+            className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex-shrink-0 cursor-pointer"
+            onClick={onOpenFullScreen}
+          >
             {currentTrack.imageUrl ? (
               <img src={currentTrack.imageUrl} alt={currentTrack.title} className="w-full h-full object-cover rounded-lg" />
             ) : (
@@ -46,7 +53,7 @@ export const EnhancedMusicPlayer: React.FC = () => {
             )}
           </div>
           
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" onClick={onOpenFullScreen}>
             <h4 className="text-white font-medium text-sm truncate">{currentTrack.title}</h4>
             <p className="text-gray-400 text-xs truncate">{currentTrack.artist}</p>
           </div>
@@ -98,14 +105,17 @@ export const EnhancedMusicPlayer: React.FC = () => {
         <div className="flex items-center justify-between">
           {/* Currently Playing */}
           <div className="flex items-center space-x-4 flex-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex-shrink-0">
+            <div 
+              className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex-shrink-0 cursor-pointer"
+              onClick={onOpenFullScreen}
+            >
               {currentTrack.imageUrl ? (
                 <img src={currentTrack.imageUrl} alt={currentTrack.title} className="w-full h-full object-cover rounded-lg" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg"></div>
               )}
             </div>
-            <div>
+            <div className="cursor-pointer" onClick={onOpenFullScreen}>
               <h4 className="text-white font-medium">{currentTrack.title}</h4>
               <p className="text-gray-400 text-sm">{currentTrack.artist}</p>
             </div>
