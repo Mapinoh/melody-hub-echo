@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, ChevronLeft, ChevronRight, User, Home, Upload, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -16,6 +17,17 @@ export const Header: React.FC = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
 
   return (
@@ -70,14 +82,16 @@ export const Header: React.FC = () => {
 
         {/* Search */}
         <div className="flex-1 max-w-md mx-4 md:mx-8">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
+              value={searchQuery}
+              onChange={handleSearchInputChange}
               placeholder="Search for artists, songs, or albums..."
               className="w-full bg-gray-800 text-white placeholder-gray-400 pl-10 pr-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
             />
-          </div>
+          </form>
         </div>
 
         {/* User Menu */}

@@ -13,6 +13,8 @@ import Profile from "./pages/Profile";
 import Artist from "./pages/Artist";
 import Playlists from "./pages/Playlists";
 import TrackDetail from "./pages/TrackDetail";
+import Search from "./pages/Search";
+import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,16 @@ const App = () => (
               <Route path="/playlists" element={
                 <ProtectedRoute>
                   <Playlists />
+                </ProtectedRoute>
+              } />
+              <Route path="/search" element={
+                <ProtectedRoute>
+                  <Search />
+                </ProtectedRoute>
+              } />
+              <Route path="/library" element={
+                <ProtectedRoute>
+                  <Library />
                 </ProtectedRoute>
               } />
               <Route path="/artist/:artistId" element={

@@ -21,6 +21,7 @@ const Playlists = () => {
   const { user } = useAuth();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -69,10 +70,15 @@ const Playlists = () => {
       if (error) throw error;
 
       toast.success('Playlist created successfully!');
+      setShowCreateDialog(false);
       fetchPlaylists();
     } catch (error: any) {
       toast.error(`Failed to create playlist: ${error.message}`);
     }
+  };
+
+  const handleCreateClick = () => {
+    setShowCreateDialog(true);
   };
 
   if (!user) {
@@ -101,7 +107,11 @@ const Playlists = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-bold text-white">My Playlists</h1>
-            <CreatePlaylistDialog onCreatePlaylist={handleCreatePlaylist} />
+            <CreatePlaylistDialog 
+              open={showCreateDialog}
+              onOpenChange={setShowCreateDialog}
+              onCreatePlaylist={handleCreatePlaylist} 
+            />
           </div>
 
           {playlists.length > 0 ? (
@@ -115,7 +125,7 @@ const Playlists = () => {
               ))}
             </div>
           ) : (
-            <EmptyPlaylistsState onCreateClick={() => {}} />
+            <EmptyPlaylistsState onCreateClick={handleCreateClick} />
           )}
         </div>
       </div>

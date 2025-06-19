@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Home, Search, Music, Heart, PlusCircle, User, Menu, X, Upload } from 'lucide-react';
+import { Home, Search, Music, Heart, PlusCircle, User, Menu, X, Upload, Library } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,13 +16,18 @@ export const ResponsiveSidebar: React.FC<ResponsiveSidebarProps> = ({ className 
 
   const menuItems = [
     { icon: Home, label: 'Home', path: '/', active: true },
+    { icon: Search, label: 'Search', path: '/search', active: false },
+    { icon: Library, label: 'Your Library', path: '/library', active: false },
+  ];
+
+  const creationItems = [
     { icon: Upload, label: 'Upload', path: '/upload', active: false },
     { icon: Music, label: 'Playlists', path: '/playlists', active: false },
   ];
 
   const libraryItems = [
     { icon: PlusCircle, label: 'Create Playlist', path: '/playlists' },
-    { icon: Heart, label: 'Liked Songs', path: '/' },
+    { icon: Heart, label: 'Liked Songs', path: '/library' },
   ];
 
   const handleNavigation = (path: string) => {
@@ -61,10 +66,32 @@ export const ResponsiveSidebar: React.FC<ResponsiveSidebarProps> = ({ className 
         ))}
       </nav>
 
+      {/* Creation Section */}
+      <div className="px-2 md:px-3 mb-4">
+        <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wide px-3 mb-3">
+          Create
+        </h3>
+        {creationItems.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => handleNavigation(item.path)}
+            className={cn(
+              'w-full flex items-center space-x-3 md:space-x-4 px-3 py-3 md:py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation text-left',
+              window.location.pathname === item.path
+                ? 'bg-gray-800 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            )}
+          >
+            <item.icon size={20} />
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </div>
+
       {/* Library Section */}
       <div className="px-2 md:px-3 mb-4">
         <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wide px-3 mb-3">
-          Your Library
+          Quick Access
         </h3>
         {libraryItems.map((item) => (
           <button
