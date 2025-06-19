@@ -1,21 +1,55 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { User, Edit, Save } from 'lucide-react';
+import { User, Edit, Save, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     full_name: '',
     username: '',
     bio: '',
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        setFormData({
+          full_name: data.full_name || '',
+          username: data.username || '',
+          bio: data.bio || '',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -31,8 +65,16 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
         <div className="text-white text-xl">Please log in to view your profile</div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-white text-xl">Loading...</div>
       </div>
     );
   }
@@ -40,6 +82,19 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="text-gray-300 hover:text-white"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
+        </div>
+
         <Card className="bg-gray-800 border-gray-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center justify-between">
@@ -50,10 +105,11 @@ const Profile = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                 className="text-gray-300 hover:text-white"
               >
                 {isEditing ? <Save className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+                {isEditing ? 'Save' : 'Edit'}
               </Button>
             </CardTitle>
           </CardHeader>
@@ -66,7 +122,7 @@ const Profile = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="text-gray-200 text-sm font-medium">Email</label>
+                <label className="text-gray-200 text-sm font-medium block mb-2">Email</label>
                 <Input
                   value={user.email || ''}
                   disabled
@@ -75,7 +131,7 @@ const Profile = () => {
               </div>
 
               <div>
-                <label className="text-gray-200 text-sm font-medium">Full Name</label>
+                <label className="text-gray-200 text-sm font-medium block mb-2">Full Name</label>
                 {isEditing ? (
                   <Input
                     value={formData.full_name}
@@ -93,7 +149,7 @@ const Profile = () => {
               </div>
 
               <div>
-                <label className="text-gray-200 text-sm font-medium">Username</label>
+                <label className="text-gray-200 text-sm font-medium block mb-2">Username</label>
                 {isEditing ? (
                   <Input
                     value={formData.username}
@@ -111,7 +167,7 @@ const Profile = () => {
               </div>
 
               <div>
-                <label className="text-gray-200 text-sm font-medium">Bio</label>
+                <label className="text-gray-200 text-sm font-medium block mb-2">Bio</label>
                 {isEditing ? (
                   <Textarea
                     value={formData.bio}
@@ -131,7 +187,7 @@ const Profile = () => {
               </div>
 
               {isEditing && (
-                <div className="flex gap-3">
+                <div className="flex gap-3 pt-4">
                   <Button
                     onClick={handleSave}
                     className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
@@ -140,7 +196,10 @@ const Profile = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setIsEditing(false)}
+                    onClick={() => {
+                      setIsEditing(false);
+                      fetchProfile(); // Reset form data
+                    }}
                     className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
                   >
                     Cancel

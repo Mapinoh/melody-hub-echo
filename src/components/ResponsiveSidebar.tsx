@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
-import { Home, Search, Music, Heart, PlusCircle, User, Menu, X } from 'lucide-react';
+import { Home, Search, Music, Heart, PlusCircle, User, Menu, X, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ResponsiveSidebarProps {
   className?: string;
@@ -9,23 +11,33 @@ interface ResponsiveSidebarProps {
 
 export const ResponsiveSidebar: React.FC<ResponsiveSidebarProps> = ({ className }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const menuItems = [
-    { icon: Home, label: 'Home', active: true },
-    { icon: Search, label: 'Search', active: false },
-    { icon: Music, label: 'Your Library', active: false },
+    { icon: Home, label: 'Home', path: '/', active: true },
+    { icon: Upload, label: 'Upload', path: '/upload', active: false },
+    { icon: Music, label: 'Playlists', path: '/playlists', active: false },
   ];
 
   const libraryItems = [
-    { icon: PlusCircle, label: 'Create Playlist' },
-    { icon: Heart, label: 'Liked Songs' },
+    { icon: PlusCircle, label: 'Create Playlist', path: '/playlists' },
+    { icon: Heart, label: 'Liked Songs', path: '/' },
   ];
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setIsMobileOpen(false);
+  };
 
   const SidebarContent = () => (
     <>
       {/* Logo */}
       <div className="p-4 md:p-6">
-        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <h1 
+          className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent cursor-pointer"
+          onClick={() => handleNavigation('/')}
+        >
           MelodyHub
         </h1>
       </div>
@@ -33,20 +45,19 @@ export const ResponsiveSidebar: React.FC<ResponsiveSidebarProps> = ({ className 
       {/* Main Navigation */}
       <nav className="px-2 md:px-3 mb-6 md:mb-8">
         {menuItems.map((item) => (
-          <a
+          <button
             key={item.label}
-            href="#"
+            onClick={() => handleNavigation(item.path)}
             className={cn(
-              'flex items-center space-x-3 md:space-x-4 px-3 py-3 md:py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation',
-              item.active
+              'w-full flex items-center space-x-3 md:space-x-4 px-3 py-3 md:py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation text-left',
+              window.location.pathname === item.path
                 ? 'bg-gray-800 text-white'
                 : 'text-gray-400 hover:text-white hover:bg-gray-800'
             )}
-            onClick={() => setIsMobileOpen(false)}
           >
             <item.icon size={20} />
             <span>{item.label}</span>
-          </a>
+          </button>
         ))}
       </nav>
 
@@ -56,15 +67,14 @@ export const ResponsiveSidebar: React.FC<ResponsiveSidebarProps> = ({ className 
           Your Library
         </h3>
         {libraryItems.map((item) => (
-          <a
+          <button
             key={item.label}
-            href="#"
-            className="flex items-center space-x-3 md:space-x-4 px-3 py-3 md:py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors touch-manipulation"
-            onClick={() => setIsMobileOpen(false)}
+            onClick={() => handleNavigation(item.path)}
+            className="w-full flex items-center space-x-3 md:space-x-4 px-3 py-3 md:py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors touch-manipulation text-left"
           >
             <item.icon size={20} />
             <span>{item.label}</span>
-          </a>
+          </button>
         ))}
       </div>
 
@@ -72,31 +82,31 @@ export const ResponsiveSidebar: React.FC<ResponsiveSidebarProps> = ({ className 
       <div className="px-2 md:px-3 flex-1 overflow-y-auto">
         <div className="space-y-1">
           {['My Playlist #1', 'Chill Vibes', 'Workout Mix', 'Late Night Drives'].map((playlist) => (
-            <a
+            <button
               key={playlist}
-              href="#"
-              className="block px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors touch-manipulation"
-              onClick={() => setIsMobileOpen(false)}
+              onClick={() => handleNavigation('/playlists')}
+              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors touch-manipulation"
             >
               {playlist}
-            </a>
+            </button>
           ))}
         </div>
       </div>
 
       {/* User Profile */}
-      <div className="p-2 md:p-3 border-t border-gray-800">
-        <a
-          href="#"
-          className="flex items-center space-x-3 px-3 py-3 md:py-2 rounded-lg hover:bg-gray-800 transition-colors touch-manipulation"
-          onClick={() => setIsMobileOpen(false)}
-        >
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-            <User size={16} />
-          </div>
-          <span className="text-sm font-medium">Your Profile</span>
-        </a>
-      </div>
+      {user && (
+        <div className="p-2 md:p-3 border-t border-gray-800">
+          <button
+            onClick={() => handleNavigation('/profile')}
+            className="w-full flex items-center space-x-3 px-3 py-3 md:py-2 rounded-lg hover:bg-gray-800 transition-colors touch-manipulation text-left"
+          >
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+              <User size={16} />
+            </div>
+            <span className="text-sm font-medium">Your Profile</span>
+          </button>
+        </div>
+      )}
     </>
   );
 
