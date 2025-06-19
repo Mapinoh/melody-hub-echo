@@ -12,10 +12,6 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  profiles?: {
-    username: string;
-    full_name: string;
-  };
 }
 
 interface CommentSectionProps {
@@ -58,13 +54,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
     try {
       const { data, error } = await supabase
         .from('comments')
-        .select(`
-          *,
-          profiles (
-            username,
-            full_name
-          )
-        `)
+        .select('*')
         .eq('track_id', trackId)
         .eq('is_flagged', false)
         .order('created_at', { ascending: false });
@@ -163,7 +153,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-white font-medium text-sm">
-                  {comment.profiles?.full_name || comment.profiles?.username || 'Anonymous'}
+                  Anonymous User
                 </span>
                 <span className="text-gray-500 text-xs">
                   {new Date(comment.created_at).toLocaleDateString()}

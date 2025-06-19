@@ -31,6 +31,7 @@ interface AudioContextType {
   repeat: boolean;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
+  recordPlay?: (playData: { trackId: string; duration: number; completed: boolean }) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -161,6 +162,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleShuffle = () => setShuffle(!shuffle);
   const toggleRepeat = () => setRepeat(!repeat);
 
+  const recordPlay = (playData: { trackId: string; duration: number; completed: boolean }) => {
+    // This is a placeholder function - would integrate with useSupabaseTracks
+    console.log('Recording play:', playData);
+  };
+
   return (
     <AudioContext.Provider
       value={{
@@ -183,6 +189,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         repeat,
         toggleShuffle,
         toggleRepeat,
+        recordPlay,
       }}
     >
       {children}

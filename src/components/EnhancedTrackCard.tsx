@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Play, Heart, Share, MoreHorizontal, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
