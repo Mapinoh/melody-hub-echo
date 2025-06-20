@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Play, Heart, Share, MoreHorizontal, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ interface Track {
 interface EnhancedTrackCardProps {
   track: Track;
   className?: string;
+  onClick?: () => void;
 }
 
 // Helper function to format duration from seconds to MM:SS
@@ -31,6 +33,7 @@ const formatDuration = (seconds: number): string => {
 export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
   track,
   className,
+  onClick,
 }) => {
   const { currentTrack, isPlaying, play, pause, recordPlay } = useAudioPlayer();
   const { likeTrack } = useSupabaseTracks();
@@ -39,6 +42,12 @@ export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
   
   const isCurrentTrack = currentTrack?.id === track.id;
   const isCurrentlyPlaying = isCurrentTrack && isPlaying;
+
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+    }
+  };
 
   const handlePlayPause = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -109,11 +118,14 @@ export const EnhancedTrackCard: React.FC<EnhancedTrackCardProps> = ({
   };
 
   return (
-    <div className={cn(
-      'group bg-gray-800/50 rounded-lg p-3 md:p-4 hover:bg-gray-800 transition-all cursor-pointer touch-manipulation',
-      isCurrentTrack && 'bg-gray-800',
-      className
-    )}>
+    <div 
+      className={cn(
+        'group bg-gray-800/50 rounded-lg p-3 md:p-4 hover:bg-gray-800 transition-all cursor-pointer touch-manipulation',
+        isCurrentTrack && 'bg-gray-800',
+        className
+      )}
+      onClick={handleCardClick}
+    >
       <div className="flex items-center space-x-3 md:space-x-4">
         {/* Album Art */}
         <div className="relative w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex-shrink-0 overflow-hidden">

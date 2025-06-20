@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus } from 'lucide-react';
 
 interface CreatePlaylistDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onCreatePlaylist: (formData: {
     title: string;
     description: string;
@@ -14,8 +16,11 @@ interface CreatePlaylistDialogProps {
   }) => Promise<void>;
 }
 
-export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({ onCreatePlaylist }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({ 
+  open, 
+  onOpenChange, 
+  onCreatePlaylist 
+}) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -25,12 +30,12 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({ onCr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onCreatePlaylist(formData);
-    setIsOpen(false);
+    onOpenChange(false);
     setFormData({ title: '', description: '', is_public: false });
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -87,7 +92,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({ onCr
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsOpen(false)}
+              onClick={() => onOpenChange(false)}
               className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
             >
               Cancel
