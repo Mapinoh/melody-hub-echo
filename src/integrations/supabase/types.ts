@@ -9,6 +9,91 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_playlist_tracks: {
+        Row: {
+          added_at: string | null
+          ai_playlist_id: string
+          episode_id: string | null
+          id: string
+          position: number
+          track_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          ai_playlist_id: string
+          episode_id?: string | null
+          id?: string
+          position: number
+          track_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          ai_playlist_id?: string
+          episode_id?: string | null
+          id?: string
+          position?: number
+          track_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_playlist_tracks_ai_playlist_id_fkey"
+            columns: ["ai_playlist_id"]
+            isOneToOne: false
+            referencedRelation: "ai_playlists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_playlist_tracks_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_playlist_tracks_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_playlists: {
+        Row: {
+          cover_art_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_updated: string | null
+          playlist_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated?: string | null
+          playlist_type: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_updated?: string | null
+          playlist_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       artists: {
         Row: {
           created_at: string | null
@@ -83,6 +168,62 @@ export type Database = {
             columns: ["track_id"]
             isOneToOne: false
             referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      episodes: {
+        Row: {
+          audio_url: string
+          created_at: string
+          description: string | null
+          duration: number | null
+          episode_number: number | null
+          id: string
+          is_published: boolean | null
+          like_count: number | null
+          play_count: number | null
+          podcast_id: string
+          published_at: string | null
+          season_number: number | null
+          title: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          episode_number?: number | null
+          id?: string
+          is_published?: boolean | null
+          like_count?: number | null
+          play_count?: number | null
+          podcast_id: string
+          published_at?: string | null
+          season_number?: number | null
+          title: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          episode_number?: number | null
+          id?: string
+          is_published?: boolean | null
+          like_count?: number | null
+          play_count?: number | null
+          podcast_id?: string
+          published_at?: string | null
+          season_number?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "episodes_podcast_id_fkey"
+            columns: ["podcast_id"]
+            isOneToOne: false
+            referencedRelation: "podcasts"
             referencedColumns: ["id"]
           },
         ]
@@ -223,6 +364,48 @@ export type Database = {
         }
         Relationships: []
       }
+      podcasts: {
+        Row: {
+          category: string | null
+          cover_art_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          host_name: string | null
+          id: string
+          is_active: boolean | null
+          language: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          cover_art_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          host_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          cover_art_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          host_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -320,6 +503,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          discovery_level: string | null
+          id: string
+          include_podcasts: boolean | null
+          language_preference: string | null
+          preferred_artists: string[] | null
+          preferred_genres: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discovery_level?: string | null
+          id?: string
+          include_podcasts?: boolean | null
+          language_preference?: string | null
+          preferred_artists?: string[] | null
+          preferred_genres?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discovery_level?: string | null
+          id?: string
+          include_podcasts?: boolean | null
+          language_preference?: string | null
+          preferred_artists?: string[] | null
+          preferred_genres?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
