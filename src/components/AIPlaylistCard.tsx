@@ -24,11 +24,11 @@ export const AIPlaylistCard: React.FC<AIPlaylistCardProps> = ({
   const getPlaylistIcon = (type: string) => {
     switch (type) {
       case 'discover_weekly':
-        return <Sparkles size={16} className="text-green-400" />;
+        return <Sparkles size={14} className="text-green-400" />;
       case 'daily_mix':
-        return <Clock size={16} className="text-blue-400" />;
+        return <Clock size={14} className="text-blue-400" />;
       default:
-        return <Play size={16} className="text-purple-400" />;
+        return <Play size={14} className="text-purple-400" />;
     }
   };
 
@@ -47,14 +47,14 @@ export const AIPlaylistCard: React.FC<AIPlaylistCardProps> = ({
   return (
     <div 
       className={cn(
-        'group bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800 transition-all cursor-pointer',
+        'group bg-gray-800/50 rounded-lg p-3 md:p-4 hover:bg-gray-800 transition-all cursor-pointer',
         className
       )}
       onClick={onClick}
     >
       <div className="flex items-start space-x-3">
         {/* Cover Art */}
-        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+        <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden flex-shrink-0">
           {playlist.cover_art_url ? (
             <img 
               src={playlist.cover_art_url} 
@@ -67,7 +67,7 @@ export const AIPlaylistCard: React.FC<AIPlaylistCardProps> = ({
             </div>
           )}
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Play size={20} className="text-white" />
+            <Play size={16} className="text-white" />
           </div>
         </div>
 

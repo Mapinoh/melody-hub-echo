@@ -1,10 +1,10 @@
 
-import React from 'react';
-import { ResponsiveSidebar } from '@/components/ResponsiveSidebar';
+import React, { useState } from 'react';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 import { Header } from '@/components/Header';
 import { EnhancedMusicPlayer } from '@/components/EnhancedMusicPlayer';
 import { FullScreenPlayer } from '@/components/FullScreenPlayer';
-import { useState } from 'react';
 
 interface SharedLayoutProps {
   children: React.ReactNode;
@@ -26,30 +26,30 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex w-full">
-      {/* Sidebar */}
-      <ResponsiveSidebar />
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        <Header />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-900">
+        <AppSidebar />
         
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <SidebarInset className="flex-1">
+          <Header />
+          
+          {/* Content Area */}
+          <main className="flex-1 overflow-y-auto pb-20 md:pb-24">
+            {children}
+          </main>
 
-        {/* Music Player */}
-        {showMusicPlayer && (
-          <>
-            <EnhancedMusicPlayer onOpenFullScreen={handleOpenFullScreenPlayer} />
-            <FullScreenPlayer 
-              isOpen={isFullScreenPlayerOpen} 
-              onClose={handleCloseFullScreenPlayer} 
-            />
-          </>
-        )}
+          {/* Music Player */}
+          {showMusicPlayer && (
+            <>
+              <EnhancedMusicPlayer onOpenFullScreen={handleOpenFullScreenPlayer} />
+              <FullScreenPlayer 
+                isOpen={isFullScreenPlayerOpen} 
+                onClose={handleCloseFullScreenPlayer} 
+              />
+            </>
+          )}
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };

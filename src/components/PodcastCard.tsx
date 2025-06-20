@@ -23,7 +23,7 @@ export const PodcastCard: React.FC<PodcastCardProps> = ({
   return (
     <div 
       className={cn(
-        'group bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800 transition-all cursor-pointer',
+        'group bg-gray-800/50 rounded-lg p-3 md:p-4 hover:bg-gray-800 transition-all cursor-pointer',
         className
       )}
       onClick={onClick}
@@ -39,11 +39,11 @@ export const PodcastCard: React.FC<PodcastCardProps> = ({
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-              <Mic size={24} className="text-white" />
+              <Mic size={20} className="text-white" />
             </div>
           )}
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Play size={20} className="text-white" />
+            <Play size={16} className="text-white" />
           </div>
         </div>
 

@@ -10,12 +10,12 @@ import { useSupabaseTracks } from '@/hooks/useSupabaseTracks';
 import { useAIPlaylists } from '@/hooks/useAIPlaylists';
 import { usePodcasts } from '@/hooks/usePodcasts';
 import { useAuth } from '@/hooks/useAuth';
-import { Sparkles, RefreshCw } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 const Index = () => {
   const { user } = useAuth();
   const { tracks: databaseTracks, isLoading: tracksLoading, error: tracksError } = useSupabaseTracks();
-  const { aiPlaylists, isLoading: playlistsLoading, generateDiscoverWeekly, isGenerating } = useAIPlaylists();
+  const { aiPlaylists, isLoading: playlistsLoading } = useAIPlaylists();
   const { podcasts, episodes, isLoading: podcastsLoading } = usePodcasts();
 
   useEffect(() => {
@@ -43,14 +43,14 @@ const Index = () => {
 
   return (
     <SharedLayout>
-      <div className="p-4 md:p-6 pb-24">
-        <div className="max-w-7xl mx-auto">
+      <div className="p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
           {/* Welcome Section */}
-          <div className="mb-8">
+          <div className="mb-6 md:mb-8">
             <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">
               {getGreeting()}{user ? `, ${user.email?.split('@')[0]}` : ''}
             </h1>
-            <p className="text-gray-400">
+            <p className="text-gray-400 text-sm md:text-base">
               Discover new music, podcasts, and personalized recommendations
             </p>
           </div>
@@ -70,54 +70,40 @@ const Index = () => {
           )}
 
           {/* Quick Access Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div 
-              className="bg-gradient-to-r from-purple-500 to-purple-700 rounded-lg p-6 hover:from-purple-600 hover:to-purple-800 transition-all cursor-pointer group"
-              onClick={() => generateDiscoverWeekly()}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-white font-semibold text-lg mb-2">AI Discover</h3>
-                  <p className="text-purple-100 text-sm">Get your weekly mix</p>
-                </div>
-                {isGenerating ? (
-                  <RefreshCw className="animate-spin text-white" size={24} />
-                ) : (
-                  <Sparkles className="text-white group-hover:scale-110 transition-transform" size={24} />
-                )}
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 md:mb-8">
+            <div className="bg-gradient-to-r from-green-500 to-green-700 rounded-lg p-4 md:p-6 hover:from-green-600 hover:to-green-800 transition-all cursor-pointer">
+              <h3 className="text-white font-semibold text-base md:text-lg mb-2">Recently Played</h3>
+              <p className="text-green-100 text-xs md:text-sm">Jump back in</p>
             </div>
             
-            <div className="bg-gradient-to-r from-green-500 to-green-700 rounded-lg p-6 hover:from-green-600 hover:to-green-800 transition-all cursor-pointer">
-              <h3 className="text-white font-semibold text-lg mb-2">Recently Played</h3>
-              <p className="text-green-100 text-sm">Jump back in</p>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-700 rounded-lg p-4 md:p-6 hover:from-orange-600 hover:to-orange-800 transition-all cursor-pointer">
+              <h3 className="text-white font-semibold text-base md:text-lg mb-2">New Podcasts</h3>
+              <p className="text-orange-100 text-xs md:text-sm">Fresh episodes</p>
             </div>
-            
-            <div className="bg-gradient-to-r from-orange-500 to-orange-700 rounded-lg p-6 hover:from-orange-600 hover:to-orange-800 transition-all cursor-pointer">
-              <h3 className="text-white font-semibold text-lg mb-2">New Podcasts</h3>
-              <p className="text-orange-100 text-sm">Fresh episodes</p>
+
+            <div className="bg-gradient-to-r from-purple-500 to-purple-700 rounded-lg p-4 md:p-6 hover:from-purple-600 hover:to-purple-800 transition-all cursor-pointer">
+              <h3 className="text-white font-semibold text-base md:text-lg mb-2">Your Library</h3>
+              <p className="text-purple-100 text-xs md:text-sm">Browse collection</p>
             </div>
           </div>
 
           {/* AI Curated Playlists */}
           {aiPlaylists.length > 0 && (
-            <section className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-white flex items-center">
-                  <Sparkles className="mr-2 text-purple-400" size={24} />
+            <section className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-lg md:text-2xl font-bold text-white flex items-center">
+                  <Sparkles className="mr-2 text-purple-400" size={20} />
                   Made for you
                 </h2>
                 <Button 
                   variant="ghost" 
                   className="text-gray-400 hover:text-white text-sm font-medium"
-                  onClick={() => generateDiscoverWeekly()}
-                  disabled={isGenerating}
                 >
-                  {isGenerating ? 'Generating...' : 'Refresh'}
+                  Show all
                 </Button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {aiPlaylists.slice(0, 6).map((playlist) => (
                   <AIPlaylistCard 
                     key={playlist.id} 
@@ -130,9 +116,9 @@ const Index = () => {
 
           {/* Recently Played Tracks */}
           {displayTracks.length > 0 && (
-            <section className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-white">
+            <section className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-lg md:text-2xl font-bold text-white">
                   Recently played
                 </h2>
                 <Button className="text-gray-400 hover:text-white text-sm font-medium" variant="ghost">
@@ -153,9 +139,9 @@ const Index = () => {
 
           {/* Popular Podcasts */}
           {podcasts.length > 0 && (
-            <section className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-white">
+            <section className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-lg md:text-2xl font-bold text-white">
                   Popular podcasts
                 </h2>
                 <Button className="text-gray-400 hover:text-white text-sm font-medium" variant="ghost">
@@ -163,7 +149,7 @@ const Index = () => {
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {podcasts.slice(0, 6).map((podcast) => (
                   <PodcastCard 
                     key={podcast.id} 
@@ -176,9 +162,9 @@ const Index = () => {
 
           {/* Latest Episodes */}
           {episodes.length > 0 && (
-            <section className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-white">
+            <section className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-lg md:text-2xl font-bold text-white">
                   Latest episodes
                 </h2>
                 <Button className="text-gray-400 hover:text-white text-sm font-medium" variant="ghost">
@@ -199,9 +185,9 @@ const Index = () => {
 
           {/* More Music to Discover */}
           {displayTracks.length > 5 && (
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-white">
+            <section className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-lg md:text-2xl font-bold text-white">
                   More music
                 </h2>
                 <Button className="text-gray-400 hover:text-white text-sm font-medium" variant="ghost">

@@ -1,5 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -47,7 +47,6 @@ export interface AIPlaylistTrack {
 }
 
 export const useAIPlaylists = () => {
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
   const { data: aiPlaylists = [], isLoading, error } = useQuery({
@@ -120,90 +119,10 @@ export const useAIPlaylists = () => {
     });
   };
 
-  const generateDiscoverWeekly = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error('Must be logged in');
-
-      // Create or update Discover Weekly playlist
-      const { data: existingPlaylist } = await supabase
-        .from('ai_playlists')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('playlist_type', 'discover_weekly')
-        .single();
-
-      let playlistId;
-      
-      if (existingPlaylist) {
-        // Update existing playlist
-        const { data: updatedPlaylist, error: updateError } = await supabase
-          .from('ai_playlists')
-          .update({ last_updated: new Date().toISOString() })
-          .eq('id', existingPlaylist.id)
-          .select()
-          .single();
-
-        if (updateError) throw updateError;
-        playlistId = updatedPlaylist.id;
-
-        // Clear existing tracks
-        await supabase
-          .from('ai_playlist_tracks')
-          .delete()
-          .eq('ai_playlist_id', playlistId);
-      } else {
-        // Create new playlist
-        const { data: newPlaylist, error: createError } = await supabase
-          .from('ai_playlists')
-          .insert({
-            user_id: user.id,
-            title: 'Discover Weekly',
-            description: 'Your weekly mix of fresh music',
-            playlist_type: 'discover_weekly',
-            cover_art_url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop'
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        playlistId = newPlaylist.id;
-      }
-
-      // Get random tracks for the playlist (simple AI simulation)
-      const { data: tracks } = await supabase
-        .from('tracks')
-        .select('id')
-        .eq('is_public', true)
-        .limit(30);
-
-      if (tracks && tracks.length > 0) {
-        // Shuffle and take first 30
-        const shuffledTracks = tracks.sort(() => Math.random() - 0.5).slice(0, 30);
-        
-        const playlistTracks = shuffledTracks.map((track, index) => ({
-          ai_playlist_id: playlistId,
-          track_id: track.id,
-          position: index + 1
-        }));
-
-        await supabase
-          .from('ai_playlist_tracks')
-          .insert(playlistTracks);
-      }
-
-      return playlistId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ai-playlists'] });
-    },
-  });
-
   return {
     aiPlaylists,
     isLoading,
     error,
     getPlaylistTracks,
-    generateDiscoverWeekly: generateDiscoverWeekly.mutate,
-    isGenerating: generateDiscoverWeekly.isPending,
   };
 };
