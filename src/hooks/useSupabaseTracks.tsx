@@ -28,9 +28,10 @@ export const useSupabaseTracks = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: tracks = [], isLoading } = useQuery({
+  const { data: tracks = [], isLoading, error } = useQuery({
     queryKey: ['tracks'],
     queryFn: async () => {
+      console.log('Fetching tracks...');
       const { data, error } = await supabase
         .from('tracks')
         .select(`
@@ -43,10 +44,20 @@ export const useSupabaseTracks = () => {
         .eq('is_public', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tracks:', error);
+        throw error;
+      }
+      
+      console.log('Fetched tracks:', data);
       return data as DatabaseTrack[];
     },
   });
+
+  // Log any query errors
+  if (error) {
+    console.error('Track query error:', error);
+  }
 
   const likeMutation = useMutation({
     mutationFn: async (trackId: string) => {
@@ -87,6 +98,8 @@ export const useSupabaseTracks = () => {
     mutationFn: async ({ trackId, duration, completed }: { trackId: string; duration: number; completed: boolean }) => {
       if (!user) return;
 
+      console.log('Recording play:', { trackId, duration, completed });
+
       // Record play history
       const { error: historyError } = await supabase
         .from('play_history')
@@ -97,7 +110,10 @@ export const useSupabaseTracks = () => {
           completed
         });
 
-      if (historyError) throw historyError;
+      if (historyError) {
+        console.error('Error recording play history:', historyError);
+        throw historyError;
+      }
 
       // Get current play count and increment it
       const { data: currentTrack, error: fetchError } = await supabase
@@ -106,7 +122,10 @@ export const useSupabaseTracks = () => {
         .eq('id', trackId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching current track:', fetchError);
+        throw fetchError;
+      }
 
       // Update play count
       const { error: countError } = await supabase
@@ -114,7 +133,12 @@ export const useSupabaseTracks = () => {
         .update({ play_count: (currentTrack?.play_count || 0) + 1 })
         .eq('id', trackId);
 
-      if (countError) throw countError;
+      if (countError) {
+        console.error('Error updating play count:', countError);
+        throw countError;
+      }
+
+      console.log('Play recorded successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tracks'] });
@@ -124,6 +148,7 @@ export const useSupabaseTracks = () => {
   return {
     tracks,
     isLoading,
+    error,
     likeTrack: likeMutation.mutate,
     recordPlay: recordPlayMutation.mutate,
   };

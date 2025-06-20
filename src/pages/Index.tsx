@@ -1,10 +1,33 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SharedLayout } from '@/components/SharedLayout';
 import { EnhancedTrackCard } from '@/components/EnhancedTrackCard';
+import { useSupabaseTracks } from '@/hooks/useSupabaseTracks';
 import { mockTracks } from '@/data/mockData';
 
 const Index = () => {
+  const { tracks: databaseTracks, isLoading, error } = useSupabaseTracks();
+
+  useEffect(() => {
+    console.log('Database tracks:', databaseTracks);
+    console.log('Loading state:', isLoading);
+    console.log('Error state:', error);
+  }, [databaseTracks, isLoading, error]);
+
+  // Use database tracks if available, otherwise fall back to mock tracks
+  const displayTracks = databaseTracks.length > 0 ? databaseTracks.map(track => ({
+    id: track.id,
+    title: track.title,
+    artist: track.artists.stage_name,
+    duration: track.duration || 180,
+    plays: `${track.play_count} plays`,
+    imageUrl: track.cover_art_url,
+    url: track.audio_url
+  })) : mockTracks.map(track => ({
+    ...track,
+    duration: Math.floor(Math.random() * 240) + 120
+  }));
+
   return (
     <SharedLayout>
       <div className="p-4 md:p-6 pb-24">
@@ -18,6 +41,27 @@ const Index = () => {
               Discover new music and enjoy your favorites
             </p>
           </div>
+
+          {/* Debug Info */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg">
+              <p className="text-red-300 text-sm">Error loading tracks: {error.message}</p>
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="mb-4 p-3 bg-blue-900/50 border border-blue-700 rounded-lg">
+              <p className="text-blue-300 text-sm">Loading tracks from database...</p>
+            </div>
+          )}
+
+          {databaseTracks.length > 0 && (
+            <div className="mb-4 p-3 bg-green-900/50 border border-green-700 rounded-lg">
+              <p className="text-green-300 text-sm">
+                Showing {databaseTracks.length} tracks from database
+              </p>
+            </div>
+          )}
 
           {/* Quick Access */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -39,7 +83,7 @@ const Index = () => {
           <section className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl md:text-2xl font-bold text-white">
-                Popular Tracks
+                {databaseTracks.length > 0 ? 'Latest Tracks' : 'Popular Tracks'}
               </h2>
               <button className="text-gray-400 hover:text-white text-sm font-medium">
                 Show all
@@ -47,13 +91,10 @@ const Index = () => {
             </div>
             
             <div className="space-y-2">
-              {mockTracks.slice(0, 6).map((track) => (
+              {displayTracks.slice(0, 6).map((track) => (
                 <EnhancedTrackCard 
                   key={track.id} 
-                  track={{
-                    ...track,
-                    duration: Math.floor(Math.random() * 240) + 120
-                  }} 
+                  track={track} 
                 />
               ))}
             </div>
@@ -93,13 +134,10 @@ const Index = () => {
             </div>
             
             <div className="space-y-2">
-              {mockTracks.slice(6, 10).map((track) => (
+              {displayTracks.slice(6, 10).map((track) => (
                 <EnhancedTrackCard 
                   key={track.id} 
-                  track={{
-                    ...track,
-                    duration: Math.floor(Math.random() * 240) + 120
-                  }} 
+                  track={track} 
                 />
               ))}
             </div>
