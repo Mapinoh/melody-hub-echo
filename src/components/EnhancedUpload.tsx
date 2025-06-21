@@ -9,13 +9,36 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload as UploadIcon, Music, Plus, X } from 'lucide-react';
+import { Upload as UploadIcon, Music, Plus, X, Calendar } from 'lucide-react';
 
 interface Track {
   title: string;
   audioFile: File | null;
   trackNumber: number;
 }
+
+const GENRES = [
+  'Hip-Hop',
+  'Pop',
+  'Rock',
+  'R&B',
+  'Jazz',
+  'Blues',
+  'Country',
+  'Electronic',
+  'Classical',
+  'Reggae',
+  'Folk',
+  'Punk',
+  'Metal',
+  'Alternative',
+  'Indie',
+  'Soul',
+  'Funk',
+  'Gospel',
+  'Afrobeat',
+  'Fuji'
+];
 
 const EnhancedUpload = () => {
   const { user } = useAuth();
@@ -26,6 +49,7 @@ const EnhancedUpload = () => {
     title: '',
     description: '',
     genre: '',
+    releaseDate: new Date().toISOString().split('T')[0],
   });
   const [tracks, setTracks] = useState<Track[]>([
     { title: '', audioFile: null, trackNumber: 1 }
@@ -72,6 +96,11 @@ const EnhancedUpload = () => {
     const invalidTracks = tracks.filter(track => !track.title || !track.audioFile);
     if (invalidTracks.length > 0) {
       toast.error('All tracks must have a title and audio file');
+      return;
+    }
+
+    if (!formData.genre) {
+      toast.error('Please select a genre');
       return;
     }
 
@@ -126,6 +155,7 @@ const EnhancedUpload = () => {
             description: formData.description,
             cover_art_url: coverArtUrl,
             release_type: releaseType,
+            release_date: formData.releaseDate,
           })
           .select()
           .single();
@@ -183,6 +213,7 @@ const EnhancedUpload = () => {
             cover_art_url: trackCoverArtUrl,
             release_type: releaseType,
             track_number: track.trackNumber,
+            release_date: formData.releaseDate,
             duration: 180, // Default duration, could be extracted from audio file
           });
 
@@ -194,7 +225,12 @@ const EnhancedUpload = () => {
       toast.success(`${releaseType.charAt(0).toUpperCase() + releaseType.slice(1)} uploaded successfully!`);
       
       // Reset form
-      setFormData({ title: '', description: '', genre: '' });
+      setFormData({ 
+        title: '', 
+        description: '', 
+        genre: '', 
+        releaseDate: new Date().toISOString().split('T')[0] 
+      });
       setTracks([{ title: '', audioFile: null, trackNumber: 1 }]);
       setCoverArt(null);
       setReleaseType('single');
@@ -270,12 +306,33 @@ const EnhancedUpload = () => {
             {/* Genre */}
             <div>
               <Label htmlFor="genre" className="text-gray-200">Genre</Label>
+              <Select value={formData.genre} onValueChange={(value) => setFormData({ ...formData, genre: value })}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue placeholder="Select a genre" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-700 border-gray-600 max-h-60">
+                  {GENRES.map((genre) => (
+                    <SelectItem key={genre} value={genre}>
+                      {genre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Release Date */}
+            <div>
+              <Label htmlFor="releaseDate" className="text-gray-200 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Release Date
+              </Label>
               <Input
-                id="genre"
-                value={formData.genre}
-                onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                id="releaseDate"
+                type="date"
+                value={formData.releaseDate}
+                onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
                 className="bg-gray-700 border-gray-600 text-white"
-                placeholder="Hip-Hop, Pop, Rock, etc."
+                required
               />
             </div>
 
@@ -290,6 +347,9 @@ const EnhancedUpload = () => {
                 className="bg-gray-700 border-gray-600 text-white"
                 required={releaseType !== 'single'}
               />
+              <p className="text-gray-400 text-sm mt-1">
+                {releaseType === 'single' ? 'Optional for singles' : 'Required for EPs and Albums'}
+              </p>
             </div>
 
             {/* Tracks */}
@@ -328,7 +388,7 @@ const EnhancedUpload = () => {
                   
                   <Input
                     type="file"
-                    accept=".mp3,.wav"
+                    accept=".mp3,.wav,.m4a,.flac"
                     onChange={(e) => updateTrack(index, 'audioFile', e.target.files?.[0] || null)}
                     className="bg-gray-600 border-gray-500 text-white"
                     required

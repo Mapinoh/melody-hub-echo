@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,10 +30,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Auto-create artist profile if user signs up
+        if (event === 'SIGNED_IN' && session?.user) {
+          await ensureArtistProfile(session.user);
+        }
       }
     );
 
@@ -47,6 +51,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const ensureArtistProfile = async (user: User) => {
+    try {
+      // Check if artist profile already exists
+      const { data: existingArtist } = await supabase
+        .from('artists')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (!existingArtist) {
+        // Create artist profile
+        const stageName = user.user_metadata?.full_name || 
+                         user.email?.split('@')[0] || 
+                         'Unknown Artist';
+        
+        const { error } = await supabase
+          .from('artists')
+          .insert({
+            id: user.id,
+            stage_name: stageName,
+            genre: [],
+            monthly_listeners: 0,
+            social_links: {}
+          });
+
+        if (error) {
+          console.error('Error creating artist profile:', error);
+        } else {
+          console.log('Artist profile created successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking/creating artist profile:', error);
+    }
+  };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;

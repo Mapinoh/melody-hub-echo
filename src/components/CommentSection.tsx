@@ -4,14 +4,24 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { MessageCircle, Send, Trash2, User } from 'lucide-react';
+import { MessageCircle, Heart, Reply, Send } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Comment {
   id: string;
   content: string;
-  created_at: string;
   user_id: string;
+  track_id: string;
+  parent_id?: string;
+  created_at: string;
+  profiles: {
+    full_name?: string;
+    username?: string;
+    avatar_url?: string;
+  };
+  replies?: Comment[];
 }
 
 interface CommentSectionProps {
@@ -22,162 +32,281 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchComments();
-    
-    // Set up real-time subscription for comments
-    const channel = supabase
-      .channel('comments-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'comments',
-          filter: `track_id=eq.${trackId}`,
-        },
-        () => {
-          fetchComments();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [trackId]);
 
   const fetchComments = async () => {
     try {
       const { data, error } = await supabase
         .from('comments')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            username,
+            avatar_url
+          )
+        `)
         .eq('track_id', trackId)
-        .eq('is_flagged', false)
+        .is('parent_id', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setComments(data || []);
+
+      // Fetch replies for each comment
+      const commentsWithReplies = await Promise.all(
+        (data || []).map(async (comment) => {
+          const { data: replies, error: repliesError } = await supabase
+            .from('comments')
+            .select(`
+              *,
+              profiles (
+                full_name,
+                username,
+                avatar_url
+              )
+            `)
+            .eq('parent_id', comment.id)
+            .order('created_at', { ascending: true });
+
+          if (repliesError) throw repliesError;
+
+          return {
+            ...comment,
+            replies: replies || []
+          };
+        })
+      );
+
+      setComments(commentsWithReplies);
     } catch (error: any) {
       console.error('Error fetching comments:', error);
+      toast.error('Failed to load comments');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitComment = async () => {
     if (!user || !newComment.trim()) return;
 
-    setSubmitting(true);
     try {
       const { error } = await supabase
         .from('comments')
         .insert({
-          user_id: user.id,
-          track_id: trackId,
           content: newComment.trim(),
+          user_id: user.id,
+          track_id: trackId
         });
 
       if (error) throw error;
 
       setNewComment('');
-      toast.success('Comment added!');
+      fetchComments();
+      toast.success('Comment posted successfully!');
     } catch (error: any) {
-      toast.error(`Failed to add comment: ${error.message}`);
-    } finally {
-      setSubmitting(false);
+      console.error('Error posting comment:', error);
+      toast.error('Failed to post comment');
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
+  const handleSubmitReply = async (parentId: string) => {
+    if (!user || !replyContent.trim()) return;
+
     try {
       const { error } = await supabase
         .from('comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', user?.id);
+        .insert({
+          content: replyContent.trim(),
+          user_id: user.id,
+          track_id: trackId,
+          parent_id: parentId
+        });
 
       if (error) throw error;
-      toast.success('Comment deleted');
+
+      setReplyContent('');
+      setReplyingTo(null);
+      fetchComments();
+      toast.success('Reply posted successfully!');
     } catch (error: any) {
-      toast.error(`Failed to delete comment: ${error.message}`);
+      console.error('Error posting reply:', error);
+      toast.error('Failed to post reply');
     }
+  };
+
+  const getUserDisplayName = (comment: Comment) => {
+    return comment.profiles?.full_name || 
+           comment.profiles?.username || 
+           'Anonymous User';
+  };
+
+  const getUserInitials = (comment: Comment) => {
+    const name = getUserDisplayName(comment);
+    return name.split(' ').map(n => n[0]).join('').toUpperCase() || 'A';
   };
 
   if (loading) {
     return (
-      <div className="p-4">
+      <div className="flex items-center justify-center py-8">
         <div className="text-gray-400">Loading comments...</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <MessageCircle className="w-5 h-5 text-gray-400" />
-        <h3 className="text-white font-medium">Comments ({comments.length})</h3>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 text-white">
+        <MessageCircle className="w-5 h-5" />
+        <h3 className="text-lg font-semibold">
+          Comments ({comments.length})
+        </h3>
       </div>
 
-      {user && (
-        <form onSubmit={handleSubmitComment} className="mb-6">
+      {/* Add Comment Form */}
+      {user ? (
+        <div className="space-y-3">
           <Textarea
+            placeholder="Add a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
-            className="bg-gray-700 border-gray-600 text-white mb-3"
+            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
             rows={3}
           />
           <Button
-            type="submit"
-            disabled={submitting || !newComment.trim()}
+            onClick={handleSubmitComment}
+            disabled={!newComment.trim()}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             <Send className="w-4 h-4 mr-2" />
-            {submitting ? 'Posting...' : 'Post Comment'}
+            Post Comment
           </Button>
-        </form>
+        </div>
+      ) : (
+        <div className="text-gray-400 text-center py-4">
+          Please log in to add comments
+        </div>
       )}
 
+      {/* Comments List */}
       <div className="space-y-4">
         {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <User className="w-4 h-4 text-white" />
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-white font-medium text-sm">
-                  Anonymous User
-                </span>
-                <span className="text-gray-500 text-xs">
-                  {new Date(comment.created_at).toLocaleDateString()}
-                </span>
-                {user?.id === comment.user_id && (
+          <div key={comment.id} className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Avatar className="w-10 h-10">
+                <AvatarFallback className="bg-gray-600 text-white">
+                  {getUserInitials(comment)}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-white font-medium">
+                    {getUserDisplayName(comment)}
+                  </span>
+                  <span className="text-gray-400 text-sm">
+                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                  </span>
+                </div>
+                
+                <p className="text-gray-300 mb-3">{comment.content}</p>
+                
+                <div className="flex items-center gap-4">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="text-gray-400 hover:text-red-400 p-1 h-auto"
+                    className="text-gray-400 hover:text-white"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Heart className="w-4 h-4 mr-1" />
+                    Like
                   </Button>
+                  
+                  {user && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <Reply className="w-4 h-4 mr-1" />
+                      Reply
+                    </Button>
+                  )}
+                </div>
+
+                {/* Reply Form */}
+                {replyingTo === comment.id && (
+                  <div className="mt-4 space-y-3">
+                    <Textarea
+                      placeholder="Write a reply..."
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                      rows={2}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleSubmitReply(comment.id)}
+                        disabled={!replyContent.trim()}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      >
+                        Reply
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setReplyContent('');
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-white"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Replies */}
+                {comment.replies && comment.replies.length > 0 && (
+                  <div className="mt-4 space-y-3 border-l-2 border-gray-600 pl-4">
+                    {comment.replies.map((reply) => (
+                      <div key={reply.id} className="flex items-start space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="bg-gray-600 text-white">
+                            {getUserInitials(reply)}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-white font-medium text-sm">
+                              {getUserDisplayName(reply)}
+                            </span>
+                            <span className="text-gray-400 text-xs">
+                              {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+                          <p className="text-gray-300 text-sm">{reply.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-              <p className="text-gray-300 text-sm">{comment.content}</p>
             </div>
           </div>
         ))}
 
         {comments.length === 0 && (
-          <div className="text-center py-8">
-            <MessageCircle className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-            <p className="text-gray-400">No comments yet. Be the first to comment!</p>
+          <div className="text-center py-8 text-gray-400">
+            No comments yet. Be the first to comment!
           </div>
         )}
       </div>
