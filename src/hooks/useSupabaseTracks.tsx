@@ -12,6 +12,9 @@ export interface DatabaseTrack {
   audio_url: string;
   cover_art_url?: string;
   release_date?: string;
+  release_type?: string;
+  track_number?: number;
+  album_id?: string;
   play_count: number;
   like_count: number;
   comment_count: number;
@@ -21,6 +24,12 @@ export interface DatabaseTrack {
   artists: {
     id: string;
     stage_name: string;
+  };
+  albums?: {
+    id: string;
+    title: string;
+    cover_art_url?: string;
+    release_type: string;
   };
 }
 
@@ -39,6 +48,12 @@ export const useSupabaseTracks = () => {
           artists (
             id,
             stage_name
+          ),
+          albums (
+            id,
+            title,
+            cover_art_url,
+            release_type
           )
         `)
         .eq('is_public', true)

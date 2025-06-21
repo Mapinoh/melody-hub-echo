@@ -94,6 +94,51 @@ export type Database = {
         }
         Relationships: []
       }
+      albums: {
+        Row: {
+          artist_id: string
+          cover_art_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          release_date: string | null
+          release_type: string
+          title: string
+          total_duration: number | null
+          total_tracks: number | null
+          updated_at: string
+        }
+        Insert: {
+          artist_id: string
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          release_date?: string | null
+          release_type: string
+          title: string
+          total_duration?: number | null
+          total_tracks?: number | null
+          updated_at?: string
+        }
+        Update: {
+          artist_id?: string
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          release_date?: string | null
+          release_type?: string
+          title?: string
+          total_duration?: number | null
+          total_tracks?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       artists: {
         Row: {
           created_at: string | null
@@ -444,6 +489,7 @@ export type Database = {
       }
       tracks: {
         Row: {
+          album_id: string | null
           artist_id: string
           audio_url: string
           comment_count: number | null
@@ -457,10 +503,13 @@ export type Database = {
           like_count: number | null
           play_count: number | null
           release_date: string | null
+          release_type: string | null
           title: string
+          track_number: number | null
           updated_at: string | null
         }
         Insert: {
+          album_id?: string | null
           artist_id: string
           audio_url: string
           comment_count?: number | null
@@ -474,10 +523,13 @@ export type Database = {
           like_count?: number | null
           play_count?: number | null
           release_date?: string | null
+          release_type?: string | null
           title: string
+          track_number?: number | null
           updated_at?: string | null
         }
         Update: {
+          album_id?: string | null
           artist_id?: string
           audio_url?: string
           comment_count?: number | null
@@ -491,10 +543,19 @@ export type Database = {
           like_count?: number | null
           play_count?: number | null
           release_date?: string | null
+          release_type?: string | null
           title?: string
+          track_number?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tracks_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tracks_artist_id_fkey"
             columns: ["artist_id"]
