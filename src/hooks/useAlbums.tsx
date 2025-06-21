@@ -48,7 +48,14 @@ export const useAlbums = () => {
       }
       
       console.log('Fetched albums:', data);
-      return data as Album[];
+      
+      // Transform the data to match our Album interface
+      const transformedData = data?.map(album => ({
+        ...album,
+        artists: Array.isArray(album.artists) ? album.artists[0] : album.artists
+      })) || [];
+      
+      return transformedData as Album[];
     },
   });
 

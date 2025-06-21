@@ -20,7 +20,7 @@ interface Comment {
     full_name?: string;
     username?: string;
     avatar_url?: string;
-  };
+  } | null;
   replies?: Comment[];
 }
 
@@ -42,43 +42,68 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get all comments for this track
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('track_id', trackId)
         .is('parent_id', null)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (commentsError) throw commentsError;
+
+      // Get all user IDs from comments
+      const userIds = commentsData?.map(comment => comment.user_id) || [];
+      
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user profiles
+      const profilesMap = new Map(
+        profilesData?.map(profile => [profile.id, profile]) || []
+      );
 
       // Fetch replies for each comment
       const commentsWithReplies = await Promise.all(
-        (data || []).map(async (comment) => {
+        (commentsData || []).map(async (comment) => {
           const { data: replies, error: repliesError } = await supabase
             .from('comments')
-            .select(`
-              *,
-              profiles (
-                full_name,
-                username,
-                avatar_url
-              )
-            `)
+            .select('*')
             .eq('parent_id', comment.id)
             .order('created_at', { ascending: true });
 
           if (repliesError) throw repliesError;
 
+          // Get user IDs from replies
+          const replyUserIds = replies?.map(reply => reply.user_id) || [];
+          
+          // Fetch profiles for reply users
+          const { data: replyProfiles, error: replyProfilesError } = await supabase
+            .from('profiles')
+            .select('id, full_name, username, avatar_url')
+            .in('id', replyUserIds);
+
+          if (replyProfilesError) throw replyProfilesError;
+
+          // Create a map for reply profiles
+          const replyProfilesMap = new Map(
+            replyProfiles?.map(profile => [profile.id, profile]) || []
+          );
+
+          const repliesWithProfiles = replies?.map(reply => ({
+            ...reply,
+            profiles: replyProfilesMap.get(reply.user_id) || null
+          })) || [];
+
           return {
             ...comment,
-            replies: replies || []
+            profiles: profilesMap.get(comment.user_id) || null,
+            replies: repliesWithProfiles
           };
         })
       );
