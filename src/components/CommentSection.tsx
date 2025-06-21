@@ -2,12 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { MessageCircle, Heart, Reply, Send } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { MessageCircle } from 'lucide-react';
+import { CommentForm } from './CommentForm';
+import { CommentItem } from './CommentItem';
 
 interface Comment {
   id: string;
@@ -31,9 +29,6 @@ interface CommentSectionProps {
 export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyContent, setReplyContent] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -117,63 +112,47 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
     }
   };
 
-  const handleSubmitComment = async () => {
-    if (!user || !newComment.trim()) return;
+  const handleSubmitComment = async (content: string) => {
+    if (!user) return;
 
-    try {
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          content: newComment.trim(),
-          user_id: user.id,
-          track_id: trackId
-        });
+    const { error } = await supabase
+      .from('comments')
+      .insert({
+        content,
+        user_id: user.id,
+        track_id: trackId
+      });
 
-      if (error) throw error;
-
-      setNewComment('');
-      fetchComments();
-      toast.success('Comment posted successfully!');
-    } catch (error: any) {
+    if (error) {
       console.error('Error posting comment:', error);
       toast.error('Failed to post comment');
+      throw error;
     }
+
+    fetchComments();
+    toast.success('Comment posted successfully!');
   };
 
-  const handleSubmitReply = async (parentId: string) => {
-    if (!user || !replyContent.trim()) return;
+  const handleSubmitReply = async (parentId: string, content: string) => {
+    if (!user) return;
 
-    try {
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          content: replyContent.trim(),
-          user_id: user.id,
-          track_id: trackId,
-          parent_id: parentId
-        });
+    const { error } = await supabase
+      .from('comments')
+      .insert({
+        content,
+        user_id: user.id,
+        track_id: trackId,
+        parent_id: parentId
+      });
 
-      if (error) throw error;
-
-      setReplyContent('');
-      setReplyingTo(null);
-      fetchComments();
-      toast.success('Reply posted successfully!');
-    } catch (error: any) {
+    if (error) {
       console.error('Error posting reply:', error);
       toast.error('Failed to post reply');
+      throw error;
     }
-  };
 
-  const getUserDisplayName = (comment: Comment) => {
-    return comment.profiles?.full_name || 
-           comment.profiles?.username || 
-           'Anonymous User';
-  };
-
-  const getUserInitials = (comment: Comment) => {
-    const name = getUserDisplayName(comment);
-    return name.split(' ').map(n => n[0]).join('').toUpperCase() || 'A';
+    fetchComments();
+    toast.success('Reply posted successfully!');
   };
 
   if (loading) {
@@ -195,23 +174,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       {/* Add Comment Form */}
       {user ? (
-        <div className="space-y-3">
-          <Textarea
-            placeholder="Add a comment..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-            rows={3}
-          />
-          <Button
-            onClick={handleSubmitComment}
-            disabled={!newComment.trim()}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-          >
-            <Send className="w-4 h-4 mr-2" />
-            Post Comment
-          </Button>
-        </div>
+        <CommentForm onSubmit={handleSubmitComment} />
       ) : (
         <div className="text-gray-400 text-center py-4">
           Please log in to add comments
@@ -221,112 +184,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       {/* Comments List */}
       <div className="space-y-4">
         {comments.map((comment) => (
-          <div key={comment.id} className="bg-gray-800 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-gray-600 text-white">
-                  {getUserInitials(comment)}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-white font-medium">
-                    {getUserDisplayName(comment)}
-                  </span>
-                  <span className="text-gray-400 text-sm">
-                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                  </span>
-                </div>
-                
-                <p className="text-gray-300 mb-3">{comment.content}</p>
-                
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <Heart className="w-4 h-4 mr-1" />
-                    Like
-                  </Button>
-                  
-                  {user && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <Reply className="w-4 h-4 mr-1" />
-                      Reply
-                    </Button>
-                  )}
-                </div>
-
-                {/* Reply Form */}
-                {replyingTo === comment.id && (
-                  <div className="mt-4 space-y-3">
-                    <Textarea
-                      placeholder="Write a reply..."
-                      value={replyContent}
-                      onChange={(e) => setReplyContent(e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                      rows={2}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleSubmitReply(comment.id)}
-                        disabled={!replyContent.trim()}
-                        size="sm"
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                      >
-                        Reply
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setReplyingTo(null);
-                          setReplyContent('');
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-400 hover:text-white"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Replies */}
-                {comment.replies && comment.replies.length > 0 && (
-                  <div className="mt-4 space-y-3 border-l-2 border-gray-600 pl-4">
-                    {comment.replies.map((reply) => (
-                      <div key={reply.id} className="flex items-start space-x-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="bg-gray-600 text-white">
-                            {getUserInitials(reply)}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-white font-medium text-sm">
-                              {getUserDisplayName(reply)}
-                            </span>
-                            <span className="text-gray-400 text-xs">
-                              {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
-                            </span>
-                          </div>
-                          <p className="text-gray-300 text-sm">{reply.content}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            user={user}
+            onReply={handleSubmitReply}
+          />
         ))}
 
         {comments.length === 0 && (
