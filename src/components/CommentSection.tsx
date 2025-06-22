@@ -85,6 +85,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
             return null;
           }
 
+          // Type assertion after type guard
+          const validComment = comment as typeof comment & { profiles: NonNullable<Comment['profiles']> };
+
           // Fetch replies for this comment
           const { data: replies, error: repliesError } = await supabase
             .from('comments')
@@ -102,7 +105,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
                 avatar_url
               )
             `)
-            .eq('parent_id', comment.id)
+            .eq('parent_id', validComment.id)
             .order('created_at', { ascending: true });
 
           if (repliesError) {
@@ -112,20 +115,23 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
           // Filter and type-check valid replies
           const validReplies: Comment[] = (replies || [])
-            .filter((reply): reply is typeof reply & { profiles: Comment['profiles'] } => {
+            .filter((reply): reply is typeof reply & { profiles: NonNullable<Comment['profiles']> } => {
               return reply.profiles && 
                      typeof reply.profiles === 'object' && 
                      'full_name' in reply.profiles && 
                      'username' in reply.profiles;
             })
-            .map(reply => ({
-              ...reply,
-              profiles: reply.profiles as Comment['profiles']
-            }));
+            .map(reply => {
+              const validReply = reply as typeof reply & { profiles: NonNullable<Comment['profiles']> };
+              return {
+                ...validReply,
+                profiles: validReply.profiles
+              } as Comment;
+            });
 
           return {
-            ...comment,
-            profiles: comment.profiles as Comment['profiles'],
+            ...validComment,
+            profiles: validComment.profiles,
             replies: validReplies
           } as Comment;
         })
@@ -181,9 +187,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           typeof data.profiles === 'object' && 
           'full_name' in data.profiles && 
           'username' in data.profiles) {
+        
+        // Type assertion after type guard
+        const validData = data as typeof data & { profiles: NonNullable<Comment['profiles']> };
+        
         const newComment: Comment = {
-          ...data,
-          profiles: data.profiles as Comment['profiles'],
+          ...validData,
+          profiles: validData.profiles,
           replies: []
         };
         
@@ -235,9 +245,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           typeof data.profiles === 'object' && 
           'full_name' in data.profiles && 
           'username' in data.profiles) {
+        
+        // Type assertion after type guard
+        const validData = data as typeof data & { profiles: NonNullable<Comment['profiles']> };
+        
         const newReply: Comment = {
-          ...data,
-          profiles: data.profiles as Comment['profiles']
+          ...validData,
+          profiles: validData.profiles
         };
 
         // Add the reply to the appropriate comment
