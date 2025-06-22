@@ -40,7 +40,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
     try {
       console.log('Fetching comments for track:', trackId);
       
-      // First fetch main comments with profiles
+      // First fetch main comments with profiles using inner join
       const { data: mainComments, error: mainError } = await supabase
         .from('comments')
         .select(`
@@ -51,7 +51,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles (
+          profiles!inner (
             full_name,
             username,
             avatar_url
@@ -73,53 +73,64 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
         return;
       }
 
-      // Filter out comments with missing or invalid profile data and build comments with replies
+      // Build comments with replies
       const commentsWithReplies = await Promise.all(
-        mainComments
-          .filter(comment => comment.profiles && typeof comment.profiles === 'object' && 'full_name' in comment.profiles)
-          .map(async (comment) => {
-            // Fetch replies for this comment
-            const { data: replies, error: repliesError } = await supabase
-              .from('comments')
-              .select(`
-                id,
-                content,
-                user_id,
-                track_id,
-                parent_id,
-                created_at,
-                updated_at,
-                profiles (
-                  full_name,
-                  username,
-                  avatar_url
-                )
-              `)
-              .eq('parent_id', comment.id)
-              .order('created_at', { ascending: true });
+        mainComments.map(async (comment) => {
+          // Type guard to ensure profiles exists
+          if (!comment.profiles || typeof comment.profiles !== 'object' || !('full_name' in comment.profiles)) {
+            console.warn('Comment has invalid profile data:', comment.id);
+            return null;
+          }
 
-            if (repliesError) {
-              console.error('Error fetching replies:', repliesError);
-              // Continue without replies rather than failing
-            }
+          // Fetch replies for this comment
+          const { data: replies, error: repliesError } = await supabase
+            .from('comments')
+            .select(`
+              id,
+              content,
+              user_id,
+              track_id,
+              parent_id,
+              created_at,
+              updated_at,
+              profiles!inner (
+                full_name,
+                username,
+                avatar_url
+              )
+            `)
+            .eq('parent_id', comment.id)
+            .order('created_at', { ascending: true });
 
-            // Filter valid replies
-            const validReplies = (replies || [])
-              .filter(reply => reply.profiles && typeof reply.profiles === 'object' && 'full_name' in reply.profiles)
-              .map(reply => ({
-                ...reply,
-                profiles: reply.profiles as Comment['profiles']
-              })) as Comment[];
+          if (repliesError) {
+            console.error('Error fetching replies:', repliesError);
+            // Continue without replies rather than failing
+          }
 
-            return {
-              ...comment,
-              profiles: comment.profiles as Comment['profiles'],
-              replies: validReplies
-            } as Comment;
-          })
+          // Filter and type-check valid replies
+          const validReplies: Comment[] = (replies || [])
+            .filter((reply): reply is typeof reply & { profiles: Comment['profiles'] } => {
+              return reply.profiles && 
+                     typeof reply.profiles === 'object' && 
+                     'full_name' in reply.profiles && 
+                     'username' in reply.profiles;
+            })
+            .map(reply => ({
+              ...reply,
+              profiles: reply.profiles as Comment['profiles']
+            }));
+
+          return {
+            ...comment,
+            profiles: comment.profiles as Comment['profiles'],
+            replies: validReplies
+          } as Comment;
+        })
       );
 
-      setComments(commentsWithReplies);
+      // Filter out null comments and set state
+      const validComments = commentsWithReplies.filter((comment): comment is Comment => comment !== null);
+      setComments(validComments);
       
     } catch (error: any) {
       console.error('Error fetching comments:', error);
@@ -151,7 +162,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles (
+          profiles!inner (
             full_name,
             username,
             avatar_url
@@ -161,12 +172,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles) {
-        const newComment = {
+      // Type guard for profile data
+      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles && 'username' in data.profiles) {
+        const newComment: Comment = {
           ...data,
           profiles: data.profiles as Comment['profiles'],
           replies: []
-        } as Comment;
+        };
         
         setComments(prev => [newComment, ...prev]);
         toast.success('Comment posted successfully');
@@ -200,7 +212,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles (
+          profiles!inner (
             full_name,
             username,
             avatar_url
@@ -210,11 +222,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles) {
-        const newReply = {
+      // Type guard for profile data
+      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles && 'username' in data.profiles) {
+        const newReply: Comment = {
           ...data,
           profiles: data.profiles as Comment['profiles']
-        } as Comment;
+        };
 
         // Add the reply to the appropriate comment
         setComments(prev => prev.map(comment => 
