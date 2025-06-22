@@ -115,13 +115,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
           // Filter and type-check valid replies
           const validReplies: Comment[] = (replies || [])
-            .filter((reply): reply is typeof reply & { profiles: NonNullable<Comment['profiles']> } => {
+            .filter((reply) => {
               return reply.profiles && 
                      typeof reply.profiles === 'object' && 
                      'full_name' in reply.profiles && 
                      'username' in reply.profiles;
             })
             .map(reply => {
+              // Type assertion for valid replies
               const validReply = reply as typeof reply & { profiles: NonNullable<Comment['profiles']> };
               return {
                 ...validReply,
