@@ -5,6 +5,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { Header } from '@/components/Header';
 import { EnhancedMusicPlayer } from '@/components/EnhancedMusicPlayer';
 import { FullScreenPlayer } from '@/components/FullScreenPlayer';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 
 interface SharedLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,16 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
   showMusicPlayer = true 
 }) => {
   const [isFullScreenPlayerOpen, setIsFullScreenPlayerOpen] = useState(false);
+  const {
+    currentTrack,
+    isPlaying,
+    currentTime,
+    duration,
+    volume,
+    togglePlay,
+    seek,
+    setVolume
+  } = useAudioPlayer();
 
   const handleOpenFullScreenPlayer = () => {
     setIsFullScreenPlayerOpen(true);
@@ -23,6 +34,15 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
 
   const handleCloseFullScreenPlayer = () => {
     setIsFullScreenPlayerOpen(false);
+  };
+
+  // Create a default track if none is available
+  const defaultTrack = {
+    id: 'default',
+    title: 'No Track Playing',
+    artist: 'Unknown Artist',
+    audio_url: '',
+    duration: 0
   };
 
   return (
@@ -43,8 +63,16 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             <>
               <EnhancedMusicPlayer onOpenFullScreen={handleOpenFullScreenPlayer} />
               <FullScreenPlayer 
+                track={currentTrack || defaultTrack}
                 isOpen={isFullScreenPlayerOpen} 
-                onClose={handleCloseFullScreenPlayer} 
+                onClose={handleCloseFullScreenPlayer}
+                isPlaying={isPlaying}
+                onPlayPause={togglePlay}
+                currentTime={currentTime}
+                duration={duration}
+                onSeek={seek}
+                volume={volume}
+                onVolumeChange={setVolume}
               />
             </>
           )}
