@@ -76,17 +76,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       // Build comments with replies
       const commentsWithReplies = await Promise.all(
         mainComments.map(async (comment) => {
-          // Type guard to ensure profiles exists and has required properties
-          if (!comment.profiles || 
-              typeof comment.profiles !== 'object' || 
-              !('full_name' in comment.profiles) ||
-              !('username' in comment.profiles)) {
-            console.warn('Comment has invalid profile data:', comment.id);
+          // Since we're using !inner join, profiles should never be null
+          // But let's add a safety check and cast the type properly
+          if (!comment.profiles) {
+            console.warn('Comment has no profile data:', comment.id);
             return null;
           }
 
-          // Type assertion after type guard
-          const validComment = comment as typeof comment & { profiles: NonNullable<Comment['profiles']> };
+          const validComment = comment as Comment;
 
           // Fetch replies for this comment
           const { data: replies, error: repliesError } = await supabase
@@ -113,28 +110,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
             // Continue without replies rather than failing
           }
 
-          // Filter and type-check valid replies
+          // Filter valid replies
           const validReplies: Comment[] = (replies || [])
-            .filter((reply) => {
-              return reply.profiles && 
-                     typeof reply.profiles === 'object' && 
-                     'full_name' in reply.profiles && 
-                     'username' in reply.profiles;
-            })
-            .map(reply => {
-              // Type assertion for valid replies
-              const validReply = reply as typeof reply & { profiles: NonNullable<Comment['profiles']> };
-              return {
-                ...validReply,
-                profiles: validReply.profiles
-              } as Comment;
-            });
+            .filter((reply) => reply.profiles !== null)
+            .map(reply => reply as Comment);
 
           return {
             ...validComment,
-            profiles: validComment.profiles,
             replies: validReplies
-          } as Comment;
+          };
         })
       );
 
@@ -182,22 +166,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      // Type guard for profile data with null check
-      if (data && 
-          data.profiles && 
-          typeof data.profiles === 'object' && 
-          'full_name' in data.profiles && 
-          'username' in data.profiles) {
-        
-        // Type assertion after type guard
-        const validData = data as typeof data & { profiles: NonNullable<Comment['profiles']> };
-        
-        const newComment: Comment = {
-          ...validData,
-          profiles: validData.profiles,
-          replies: []
-        };
-        
+      if (data && data.profiles) {
+        const newComment = data as Comment;
         setComments(prev => [newComment, ...prev]);
         toast.success('Comment posted successfully');
       }
@@ -240,20 +210,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      // Type guard for profile data with null check
-      if (data && 
-          data.profiles && 
-          typeof data.profiles === 'object' && 
-          'full_name' in data.profiles && 
-          'username' in data.profiles) {
-        
-        // Type assertion after type guard
-        const validData = data as typeof data & { profiles: NonNullable<Comment['profiles']> };
-        
-        const newReply: Comment = {
-          ...validData,
-          profiles: validData.profiles
-        };
+      if (data && data.profiles) {
+        const newReply = data as Comment;
 
         // Add the reply to the appropriate comment
         setComments(prev => prev.map(comment => 
