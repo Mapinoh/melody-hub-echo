@@ -38,11 +38,20 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Fetching comments for track:', trackId);
+      
+      // First fetch main comments
+      const { data: mainComments, error: mainError } = await supabase
         .from('comments')
         .select(`
-          *,
-          profiles (
+          id,
+          content,
+          user_id,
+          track_id,
+          parent_id,
+          created_at,
+          updated_at,
+          profiles!comments_user_id_fkey (
             full_name,
             username,
             avatar_url
@@ -52,16 +61,38 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
         .is('parent_id', null)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (mainError) {
+        console.error('Error fetching main comments:', mainError);
+        throw mainError;
+      }
 
-      // Fetch replies for each comment
+      console.log('Main comments fetched:', mainComments);
+
+      if (!mainComments || mainComments.length === 0) {
+        setComments([]);
+        return;
+      }
+
+      // Then fetch replies for each comment
       const commentsWithReplies = await Promise.all(
-        (data || []).map(async (comment) => {
+        mainComments.map(async (comment) => {
+          // Skip if profiles is null or has error
+          if (!comment.profiles) {
+            console.warn('Comment missing profile data:', comment.id);
+            return null;
+          }
+
           const { data: replies, error: repliesError } = await supabase
             .from('comments')
             .select(`
-              *,
-              profiles (
+              id,
+              content,
+              user_id,
+              track_id,
+              parent_id,
+              created_at,
+              updated_at,
+              profiles!comments_user_id_fkey (
                 full_name,
                 username,
                 avatar_url
@@ -70,16 +101,30 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
             .eq('parent_id', comment.id)
             .order('created_at', { ascending: true });
 
-          if (repliesError) throw repliesError;
+          if (repliesError) {
+            console.error('Error fetching replies:', repliesError);
+            // Continue without replies rather than failing
+          }
+
+          // Filter out replies with missing profile data
+          const validReplies = (replies || []).filter(reply => 
+            reply.profiles && 
+            typeof reply.profiles === 'object' && 
+            'full_name' in reply.profiles
+          ) as Comment[];
 
           return {
             ...comment,
-            replies: replies || []
-          };
+            profiles: comment.profiles as Comment['profiles'],
+            replies: validReplies
+          } as Comment;
         })
       );
 
-      setComments(commentsWithReplies);
+      // Filter out null comments (those with missing profile data)
+      const validComments = commentsWithReplies.filter(Boolean) as Comment[];
+      setComments(validComments);
+      
     } catch (error: any) {
       console.error('Error fetching comments:', error);
       toast.error('Failed to load comments');
@@ -103,8 +148,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           track_id: trackId
         })
         .select(`
-          *,
-          profiles (
+          id,
+          content,
+          user_id,
+          track_id,
+          parent_id,
+          created_at,
+          updated_at,
+          profiles!comments_user_id_fkey (
             full_name,
             username,
             avatar_url
@@ -114,9 +165,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      // Add the new comment to the top of the list
-      setComments(prev => [{ ...data, replies: [] }, ...prev]);
-      toast.success('Comment posted successfully');
+      if (data && data.profiles) {
+        // Add the new comment to the top of the list
+        const newComment = {
+          ...data,
+          profiles: data.profiles as Comment['profiles'],
+          replies: []
+        } as Comment;
+        
+        setComments(prev => [newComment, ...prev]);
+        toast.success('Comment posted successfully');
+      }
     } catch (error: any) {
       console.error('Error posting comment:', error);
       toast.error('Failed to post comment');
@@ -139,8 +198,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id: parentId
         })
         .select(`
-          *,
-          profiles (
+          id,
+          content,
+          user_id,
+          track_id,
+          parent_id,
+          created_at,
+          updated_at,
+          profiles!comments_user_id_fkey (
             full_name,
             username,
             avatar_url
@@ -150,13 +215,20 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      // Add the reply to the appropriate comment
-      setComments(prev => prev.map(comment => 
-        comment.id === parentId 
-          ? { ...comment, replies: [...(comment.replies || []), data] }
-          : comment
-      ));
-      toast.success('Reply posted successfully');
+      if (data && data.profiles) {
+        const newReply = {
+          ...data,
+          profiles: data.profiles as Comment['profiles']
+        } as Comment;
+
+        // Add the reply to the appropriate comment
+        setComments(prev => prev.map(comment => 
+          comment.id === parentId 
+            ? { ...comment, replies: [...(comment.replies || []), newReply] }
+            : comment
+        ));
+        toast.success('Reply posted successfully');
+      }
     } catch (error: any) {
       console.error('Error posting reply:', error);
       toast.error('Failed to post reply');
