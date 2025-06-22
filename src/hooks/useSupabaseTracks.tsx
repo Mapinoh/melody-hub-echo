@@ -69,10 +69,27 @@ export const useSupabaseTracks = () => {
     },
   });
 
-  // Log any query errors
-  if (error) {
-    console.error('Track query error:', error);
-  }
+  // Get user's liked tracks
+  const { data: likedTracks = [] } = useQuery({
+    queryKey: ['liked-tracks', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('likes')
+        .select('track_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return data.map(like => like.track_id);
+    },
+    enabled: !!user,
+  });
+
+  // Check if track is liked by current user
+  const isTrackLiked = (trackId: string) => {
+    return likedTracks.includes(trackId);
+  };
 
   const likeMutation = useMutation({
     mutationFn: async (trackId: string) => {
@@ -106,6 +123,7 @@ export const useSupabaseTracks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tracks'] });
+      queryClient.invalidateQueries({ queryKey: ['liked-tracks'] });
     },
   });
 
@@ -164,6 +182,8 @@ export const useSupabaseTracks = () => {
     tracks,
     isLoading,
     error,
+    likedTracks,
+    isTrackLiked,
     likeTrack: likeMutation.mutate,
     recordPlay: recordPlayMutation.mutate,
   };

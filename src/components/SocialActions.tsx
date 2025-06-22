@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabaseTracks } from '@/hooks/useSupabaseTracks';
 import { Button } from '@/components/ui/button';
@@ -15,12 +15,19 @@ interface SocialActionsProps {
 export const SocialActions: React.FC<SocialActionsProps> = ({ 
   trackId, 
   likeCount, 
-  isLiked = false 
+  isLiked: initialIsLiked = false 
 }) => {
   const { user } = useAuth();
-  const { likeTrack } = useSupabaseTracks();
-  const [liked, setLiked] = useState(isLiked);
+  const { likeTrack, isTrackLiked } = useSupabaseTracks();
+  const [liked, setLiked] = useState(initialIsLiked);
   const [currentLikeCount, setCurrentLikeCount] = useState(likeCount);
+
+  // Update liked state when user or track data changes
+  useEffect(() => {
+    if (user) {
+      setLiked(isTrackLiked(trackId));
+    }
+  }, [user, trackId, isTrackLiked]);
 
   const handleLike = async () => {
     if (!user) {
@@ -29,11 +36,17 @@ export const SocialActions: React.FC<SocialActionsProps> = ({
     }
 
     try {
-      likeTrack(trackId);
+      // Optimistic update
+      const wasLiked = liked;
       setLiked(!liked);
-      setCurrentLikeCount(prev => liked ? prev - 1 : prev + 1);
-      toast.success(liked ? 'Removed from liked tracks' : 'Added to liked tracks');
+      setCurrentLikeCount(prev => wasLiked ? prev - 1 : prev + 1);
+
+      likeTrack(trackId);
+      toast.success(wasLiked ? 'Removed from liked tracks' : 'Added to liked tracks');
     } catch (error) {
+      // Revert on error
+      setLiked(liked);
+      setCurrentLikeCount(likeCount);
       toast.error('Failed to update like status');
     }
   };

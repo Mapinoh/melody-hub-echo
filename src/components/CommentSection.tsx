@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { CommentForm } from '@/components/CommentForm';
+import { CommentItem } from '@/components/CommentItem';
 import { MessageCircle } from 'lucide-react';
-import { CommentForm } from './CommentForm';
-import { CommentItem } from './CommentItem';
+import { toast } from 'sonner';
 
 interface Comment {
   id: string;
@@ -14,11 +14,12 @@ interface Comment {
   track_id: string;
   parent_id?: string;
   created_at: string;
+  updated_at: string;
   profiles: {
-    full_name?: string;
-    username?: string;
+    full_name: string;
+    username: string;
     avatar_url?: string;
-  } | null;
+  };
   replies?: Comment[];
 }
 
@@ -37,68 +38,43 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
   const fetchComments = async () => {
     try {
-      // First, get all comments for this track
-      const { data: commentsData, error: commentsError } = await supabase
+      const { data, error } = await supabase
         .from('comments')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            username,
+            avatar_url
+          )
+        `)
         .eq('track_id', trackId)
         .is('parent_id', null)
         .order('created_at', { ascending: false });
 
-      if (commentsError) throw commentsError;
-
-      // Get all user IDs from comments
-      const userIds = commentsData?.map(comment => comment.user_id) || [];
-      
-      // Fetch profiles for these users
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, username, avatar_url')
-        .in('id', userIds);
-
-      if (profilesError) throw profilesError;
-
-      // Create a map of user profiles
-      const profilesMap = new Map(
-        profilesData?.map(profile => [profile.id, profile]) || []
-      );
+      if (error) throw error;
 
       // Fetch replies for each comment
       const commentsWithReplies = await Promise.all(
-        (commentsData || []).map(async (comment) => {
+        (data || []).map(async (comment) => {
           const { data: replies, error: repliesError } = await supabase
             .from('comments')
-            .select('*')
+            .select(`
+              *,
+              profiles (
+                full_name,
+                username,
+                avatar_url
+              )
+            `)
             .eq('parent_id', comment.id)
             .order('created_at', { ascending: true });
 
           if (repliesError) throw repliesError;
 
-          // Get user IDs from replies
-          const replyUserIds = replies?.map(reply => reply.user_id) || [];
-          
-          // Fetch profiles for reply users
-          const { data: replyProfiles, error: replyProfilesError } = await supabase
-            .from('profiles')
-            .select('id, full_name, username, avatar_url')
-            .in('id', replyUserIds);
-
-          if (replyProfilesError) throw replyProfilesError;
-
-          // Create a map for reply profiles
-          const replyProfilesMap = new Map(
-            replyProfiles?.map(profile => [profile.id, profile]) || []
-          );
-
-          const repliesWithProfiles = replies?.map(reply => ({
-            ...reply,
-            profiles: replyProfilesMap.get(reply.user_id) || null
-          })) || [];
-
           return {
             ...comment,
-            profiles: profilesMap.get(comment.user_id) || null,
-            replies: repliesWithProfiles
+            replies: replies || []
           };
         })
       );
@@ -113,51 +89,115 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
   };
 
   const handleSubmitComment = async (content: string) => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Please log in to comment');
+      return;
+    }
 
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        content,
-        user_id: user.id,
-        track_id: trackId
-      });
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          content,
+          user_id: user.id,
+          track_id: trackId
+        })
+        .select(`
+          *,
+          profiles (
+            full_name,
+            username,
+            avatar_url
+          )
+        `)
+        .single();
 
-    if (error) {
+      if (error) throw error;
+
+      // Add the new comment to the top of the list
+      setComments(prev => [{ ...data, replies: [] }, ...prev]);
+      toast.success('Comment posted successfully');
+    } catch (error: any) {
       console.error('Error posting comment:', error);
       toast.error('Failed to post comment');
-      throw error;
     }
-
-    fetchComments();
-    toast.success('Comment posted successfully!');
   };
 
-  const handleSubmitReply = async (parentId: string, content: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        content,
-        user_id: user.id,
-        track_id: trackId,
-        parent_id: parentId
-      });
-
-    if (error) {
-      console.error('Error posting reply:', error);
-      toast.error('Failed to post reply');
-      throw error;
+  const handleSubmitReply = async (content: string, parentId: string) => {
+    if (!user) {
+      toast.error('Please log in to reply');
+      return;
     }
 
-    fetchComments();
-    toast.success('Reply posted successfully!');
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          content,
+          user_id: user.id,
+          track_id: trackId,
+          parent_id: parentId
+        })
+        .select(`
+          *,
+          profiles (
+            full_name,
+            username,
+            avatar_url
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Add the reply to the appropriate comment
+      setComments(prev => prev.map(comment => 
+        comment.id === parentId 
+          ? { ...comment, replies: [...(comment.replies || []), data] }
+          : comment
+      ));
+      toast.success('Reply posted successfully');
+    } catch (error: any) {
+      console.error('Error posting reply:', error);
+      toast.error('Failed to post reply');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string, isReply: boolean, parentId?: string) => {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      if (isReply && parentId) {
+        // Remove reply from parent comment
+        setComments(prev => prev.map(comment => 
+          comment.id === parentId 
+            ? { ...comment, replies: comment.replies?.filter(reply => reply.id !== commentId) || [] }
+            : comment
+        ));
+      } else {
+        // Remove main comment
+        setComments(prev => prev.filter(comment => comment.id !== commentId));
+      }
+
+      toast.success('Comment deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting comment:', error);
+      toast.error('Failed to delete comment');
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 text-white">
+          <MessageCircle className="w-5 h-5" />
+          <h3 className="text-lg font-semibold">Comments</h3>
+        </div>
         <div className="text-gray-400">Loading comments...</div>
       </div>
     );
@@ -167,34 +207,33 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-white">
         <MessageCircle className="w-5 h-5" />
-        <h3 className="text-lg font-semibold">
-          Comments ({comments.length})
-        </h3>
+        <h3 className="text-lg font-semibold">Comments ({comments.length})</h3>
       </div>
 
-      {/* Add Comment Form */}
-      {user ? (
-        <CommentForm onSubmit={handleSubmitComment} />
-      ) : (
-        <div className="text-gray-400 text-center py-4">
-          Please log in to add comments
-        </div>
+      {user && (
+        <CommentForm
+          onSubmit={handleSubmitComment}
+          placeholder="Add a comment..."
+          buttonText="Post Comment"
+        />
       )}
 
-      {/* Comments List */}
       <div className="space-y-4">
-        {comments.map((comment) => (
-          <CommentItem
-            key={comment.id}
-            comment={comment}
-            user={user}
-            onReply={handleSubmitReply}
-          />
-        ))}
-
-        {comments.length === 0 && (
-          <div className="text-center py-8 text-gray-400">
-            No comments yet. Be the first to comment!
+        {comments.length > 0 ? (
+          comments.map((comment) => (
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              currentUser={user}
+              onReply={handleSubmitReply}
+              onDelete={handleDeleteComment}
+            />
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <MessageCircle className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400">No comments yet</p>
+            <p className="text-gray-500 text-sm">Be the first to share your thoughts!</p>
           </div>
         )}
       </div>

@@ -1,135 +1,137 @@
 
 import React, { useState } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { CommentForm } from '@/components/CommentForm';
 import { Button } from '@/components/ui/button';
-import { Heart, Reply } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Reply, Trash2, MoreHorizontal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { CommentForm } from './CommentForm';
 
 interface Comment {
   id: string;
   content: string;
   user_id: string;
-  track_id: string;
   parent_id?: string;
   created_at: string;
   profiles: {
-    full_name?: string;
-    username?: string;
+    full_name: string;
+    username: string;
     avatar_url?: string;
-  } | null;
+  };
   replies?: Comment[];
 }
 
 interface CommentItemProps {
   comment: Comment;
-  user: any;
-  onReply: (parentId: string, content: string) => Promise<void>;
+  currentUser: any;
+  onReply: (content: string, parentId: string) => Promise<void>;
+  onDelete: (commentId: string, isReply: boolean, parentId?: string) => Promise<void>;
+  isReply?: boolean;
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({
   comment,
-  user,
-  onReply
+  currentUser,
+  onReply,
+  onDelete,
+  isReply = false
 }) => {
-  const [isReplying, setIsReplying] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const getUserDisplayName = (comment: Comment) => {
-    return comment.profiles?.full_name || 
-           comment.profiles?.username || 
-           'Anonymous User';
+  const handleReply = async (content: string) => {
+    await onReply(content, comment.id);
+    setShowReplyForm(false);
   };
 
-  const getUserInitials = (comment: Comment) => {
-    const name = getUserDisplayName(comment);
-    return name.split(' ').map(n => n[0]).join('').toUpperCase() || 'A';
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    
+    setIsDeleting(true);
+    try {
+      await onDelete(comment.id, isReply, comment.parent_id);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
-  const handleReplySubmit = async (content: string) => {
-    await onReply(comment.id, content);
-    setIsReplying(false);
-  };
+  const canDelete = currentUser && currentUser.id === comment.user_id;
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <div className="flex items-start space-x-3">
-        <Avatar className="w-10 h-10">
-          <AvatarFallback className="bg-gray-600 text-white">
-            {getUserInitials(comment)}
+    <div className={`space-y-3 ${isReply ? 'ml-8 border-l border-gray-700 pl-4' : ''}`}>
+      <div className="flex items-start gap-3">
+        <Avatar className="w-8 h-8 flex-shrink-0">
+          <AvatarImage src={comment.profiles.avatar_url} />
+          <AvatarFallback className="bg-gray-700 text-white text-xs">
+            {comment.profiles.full_name?.charAt(0) || comment.profiles.username?.charAt(0) || 'U'}
           </AvatarFallback>
         </Avatar>
-        
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-white font-medium">
-              {getUserDisplayName(comment)}
-            </span>
-            <span className="text-gray-400 text-sm">
-              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-            </span>
+
+        <div className="flex-1 min-w-0">
+          <div className="bg-gray-800 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-medium text-white text-sm">
+                {comment.profiles.full_name || comment.profiles.username}
+              </span>
+              <span className="text-gray-400 text-xs">
+                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+              </span>
+            </div>
+            <p className="text-gray-300 text-sm whitespace-pre-wrap">
+              {comment.content}
+            </p>
           </div>
-          
-          <p className="text-gray-300 mb-3">{comment.content}</p>
-          
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-white"
-            >
-              <Heart className="w-4 h-4 mr-1" />
-              Like
-            </Button>
-            
-            {user && (
+
+          <div className="flex items-center gap-2 mt-2">
+            {!isReply && currentUser && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsReplying(!isReplying)}
-                className="text-gray-400 hover:text-white"
+                onClick={() => setShowReplyForm(!showReplyForm)}
+                className="text-gray-400 hover:text-white text-xs h-auto p-1"
               >
-                <Reply className="w-4 h-4 mr-1" />
+                <Reply className="w-3 h-3 mr-1" />
                 Reply
+              </Button>
+            )}
+
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-gray-400 hover:text-red-400 text-xs h-auto p-1"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </Button>
             )}
           </div>
 
-          {/* Reply Form */}
-          {isReplying && (
-            <div className="mt-4">
+          {showReplyForm && (
+            <div className="mt-3">
               <CommentForm
-                onSubmit={handleReplySubmit}
+                onSubmit={handleReply}
                 placeholder="Write a reply..."
                 buttonText="Reply"
                 isReply={true}
-                onCancel={() => setIsReplying(false)}
+                onCancel={() => setShowReplyForm(false)}
               />
             </div>
           )}
 
-          {/* Replies */}
+          {/* Render replies */}
           {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-4 space-y-3 border-l-2 border-gray-600 pl-4">
+            <div className="mt-4 space-y-3">
               {comment.replies.map((reply) => (
-                <div key={reply.id} className="flex items-start space-x-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-gray-600 text-white">
-                      {getUserInitials(reply)}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-white font-medium text-sm">
-                        {getUserDisplayName(reply)}
-                      </span>
-                      <span className="text-gray-400 text-xs">
-                        {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-gray-300 text-sm">{reply.content}</p>
-                  </div>
-                </div>
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  currentUser={currentUser}
+                  onReply={onReply}
+                  onDelete={onDelete}
+                  isReply={true}
+                />
               ))}
             </div>
           )}

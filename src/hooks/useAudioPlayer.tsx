@@ -1,5 +1,6 @@
 
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
+import { useSupabaseTracks } from './useSupabaseTracks';
 
 interface Track {
   id: string;
@@ -54,8 +55,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
+  const [lastPlayTime, setLastPlayTime] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { recordPlay } = useSupabaseTracks();
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -64,9 +67,32 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const audio = audioRef.current;
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      
+      // Record play progress every 30 seconds
+      if (currentTrack && audio.currentTime - lastPlayTime > 30) {
+        recordPlay?.({
+          trackId: currentTrack.id,
+          duration: Math.floor(audio.currentTime),
+          completed: false
+        });
+        setLastPlayTime(audio.currentTime);
+      }
+    };
+
     const handleLoadedMetadata = () => setDuration(audio.duration);
+    
     const handleEnded = () => {
+      // Record completed play
+      if (currentTrack) {
+        recordPlay?.({
+          trackId: currentTrack.id,
+          duration: Math.floor(audio.duration),
+          completed: true
+        });
+      }
+
       if (repeat) {
         audio.currentTime = 0;
         audio.play();
@@ -75,35 +101,43 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
     };
-  }, [repeat]);
+  }, [repeat, currentTrack, recordPlay, lastPlayTime]);
 
   const play = (track?: Track) => {
     if (track && audioRef.current) {
       setCurrentTrack(track);
-      // Using a dummy audio URL for demo purposes
+      setLastPlayTime(0);
+      // Using a dummy audio URL for demo purposes - replace with actual audio URL
       audioRef.current.src = track.url || '/audio/demo-track.mp3';
       audioRef.current.volume = volume / 100;
     }
     
     if (audioRef.current) {
-      audioRef.current.play();
-      setIsPlaying(true);
+      audioRef.current.play().catch(error => {
+        console.error('Error playing audio:', error);
+      });
     }
   };
 
   const pause = () => {
     if (audioRef.current) {
       audioRef.current.pause();
-      setIsPlaying(false);
     }
   };
 
@@ -161,11 +195,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const toggleShuffle = () => setShuffle(!shuffle);
   const toggleRepeat = () => setRepeat(!repeat);
-
-  const recordPlay = (playData: { trackId: string; duration: number; completed: boolean }) => {
-    // This is a placeholder function - would integrate with useSupabaseTracks
-    console.log('Recording play:', playData);
-  };
 
   return (
     <AudioContext.Provider
