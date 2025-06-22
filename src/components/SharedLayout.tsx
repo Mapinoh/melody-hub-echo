@@ -45,6 +45,16 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
     duration: 0
   };
 
+  // Convert currentTrack from useAudioPlayer format to FullScreenPlayer format
+  const fullScreenTrack = currentTrack ? {
+    id: currentTrack.id,
+    title: currentTrack.title,
+    artist: currentTrack.artist,
+    audio_url: currentTrack.url || '',
+    duration: currentTrack.duration,
+    cover: currentTrack.imageUrl
+  } : defaultTrack;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-900">
@@ -63,7 +73,7 @@ export const SharedLayout: React.FC<SharedLayoutProps> = ({
             <>
               <EnhancedMusicPlayer onOpenFullScreen={handleOpenFullScreenPlayer} />
               <FullScreenPlayer 
-                track={currentTrack || defaultTrack}
+                track={fullScreenTrack}
                 isOpen={isFullScreenPlayerOpen} 
                 onClose={handleCloseFullScreenPlayer}
                 isPlaying={isPlaying}
