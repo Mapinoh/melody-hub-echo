@@ -76,8 +76,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       // Build comments with replies
       const commentsWithReplies = await Promise.all(
         mainComments.map(async (comment) => {
-          // Type guard to ensure profiles exists
-          if (!comment.profiles || typeof comment.profiles !== 'object' || !('full_name' in comment.profiles)) {
+          // Type guard to ensure profiles exists and has required properties
+          if (!comment.profiles || 
+              typeof comment.profiles !== 'object' || 
+              !('full_name' in comment.profiles) ||
+              !('username' in comment.profiles)) {
             console.warn('Comment has invalid profile data:', comment.id);
             return null;
           }
@@ -172,8 +175,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      // Type guard for profile data
-      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles && 'username' in data.profiles) {
+      // Type guard for profile data with null check
+      if (data && 
+          data.profiles && 
+          typeof data.profiles === 'object' && 
+          'full_name' in data.profiles && 
+          'username' in data.profiles) {
         const newComment: Comment = {
           ...data,
           profiles: data.profiles as Comment['profiles'],
@@ -222,8 +229,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      // Type guard for profile data
-      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles && 'username' in data.profiles) {
+      // Type guard for profile data with null check
+      if (data && 
+          data.profiles && 
+          typeof data.profiles === 'object' && 
+          'full_name' in data.profiles && 
+          'username' in data.profiles) {
         const newReply: Comment = {
           ...data,
           profiles: data.profiles as Comment['profiles']
