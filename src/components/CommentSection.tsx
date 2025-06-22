@@ -40,7 +40,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
     try {
       console.log('Fetching comments for track:', trackId);
       
-      // First fetch main comments
+      // First fetch main comments with profiles
       const { data: mainComments, error: mainError } = await supabase
         .from('comments')
         .select(`
@@ -51,7 +51,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!comments_user_id_fkey (
+          profiles (
             full_name,
             username,
             avatar_url
@@ -73,57 +73,53 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
         return;
       }
 
-      // Then fetch replies for each comment
+      // Filter out comments with missing or invalid profile data and build comments with replies
       const commentsWithReplies = await Promise.all(
-        mainComments.map(async (comment) => {
-          // Skip if profiles is null or has error
-          if (!comment.profiles) {
-            console.warn('Comment missing profile data:', comment.id);
-            return null;
-          }
+        mainComments
+          .filter(comment => comment.profiles && typeof comment.profiles === 'object' && 'full_name' in comment.profiles)
+          .map(async (comment) => {
+            // Fetch replies for this comment
+            const { data: replies, error: repliesError } = await supabase
+              .from('comments')
+              .select(`
+                id,
+                content,
+                user_id,
+                track_id,
+                parent_id,
+                created_at,
+                updated_at,
+                profiles (
+                  full_name,
+                  username,
+                  avatar_url
+                )
+              `)
+              .eq('parent_id', comment.id)
+              .order('created_at', { ascending: true });
 
-          const { data: replies, error: repliesError } = await supabase
-            .from('comments')
-            .select(`
-              id,
-              content,
-              user_id,
-              track_id,
-              parent_id,
-              created_at,
-              updated_at,
-              profiles!comments_user_id_fkey (
-                full_name,
-                username,
-                avatar_url
-              )
-            `)
-            .eq('parent_id', comment.id)
-            .order('created_at', { ascending: true });
+            if (repliesError) {
+              console.error('Error fetching replies:', repliesError);
+              // Continue without replies rather than failing
+            }
 
-          if (repliesError) {
-            console.error('Error fetching replies:', repliesError);
-            // Continue without replies rather than failing
-          }
+            // Filter valid replies
+            const validReplies = (replies || [])
+              .filter(reply => reply.profiles && typeof reply.profiles === 'object' && 'full_name' in reply.profiles)
+              .map(reply => ({
+                ...reply,
+                profiles: reply.profiles as Comment['profiles']
+              })) as Comment[];
 
-          // Filter out replies with missing profile data
-          const validReplies = (replies || []).filter(reply => 
-            reply.profiles && 
-            typeof reply.profiles === 'object' && 
-            'full_name' in reply.profiles
-          ) as Comment[];
-
-          return {
-            ...comment,
-            profiles: comment.profiles as Comment['profiles'],
-            replies: validReplies
-          } as Comment;
-        })
+            return {
+              ...comment,
+              profiles: comment.profiles as Comment['profiles'],
+              replies: validReplies
+            } as Comment;
+          })
       );
 
-      // Filter out null comments (those with missing profile data)
-      const validComments = commentsWithReplies.filter(Boolean) as Comment[];
-      setComments(validComments);
+      setComments(commentsWithReplies);
       
     } catch (error: any) {
       console.error('Error fetching comments:', error);
@@ -155,7 +151,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!comments_user_id_fkey (
+          profiles (
             full_name,
             username,
             avatar_url
@@ -165,8 +161,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      if (data && data.profiles) {
-        // Add the new comment to the top of the list
+      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles) {
         const newComment = {
           ...data,
           profiles: data.profiles as Comment['profiles'],
@@ -205,7 +200,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!comments_user_id_fkey (
+          profiles (
             full_name,
             username,
             avatar_url
@@ -215,7 +210,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
 
       if (error) throw error;
 
-      if (data && data.profiles) {
+      if (data && data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles) {
         const newReply = {
           ...data,
           profiles: data.profiles as Comment['profiles']
