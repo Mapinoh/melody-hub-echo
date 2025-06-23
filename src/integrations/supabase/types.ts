@@ -139,32 +139,85 @@ export type Database = {
         }
         Relationships: []
       }
+      artist_verifications: {
+        Row: {
+          admin_notes: string | null
+          artist_id: string
+          created_at: string
+          id: string
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          verification_documents: Json | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          artist_id: string
+          created_at?: string
+          id?: string
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          verification_documents?: Json | null
+        }
+        Update: {
+          admin_notes?: string | null
+          artist_id?: string
+          created_at?: string
+          id?: string
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          verification_documents?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_verifications_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       artists: {
         Row: {
           created_at: string | null
+          followers_count: number | null
           genre: string[] | null
           id: string
           monthly_listeners: number | null
           social_links: Json | null
           stage_name: string
+          verified: boolean | null
           verified_at: string | null
         }
         Insert: {
           created_at?: string | null
+          followers_count?: number | null
           genre?: string[] | null
           id: string
           monthly_listeners?: number | null
           social_links?: Json | null
           stage_name: string
+          verified?: boolean | null
           verified_at?: string | null
         }
         Update: {
           created_at?: string | null
+          followers_count?: number | null
           genre?: string[] | null
           id?: string
           monthly_listeners?: number | null
           social_links?: Json | null
           stage_name?: string
+          verified?: boolean | null
           verified_at?: string | null
         }
         Relationships: []
@@ -453,6 +506,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          artist_id: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
@@ -464,6 +518,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          artist_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -475,6 +530,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          artist_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -485,7 +541,15 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracks: {
         Row: {
@@ -561,6 +625,64 @@ export type Database = {
             columns: ["artist_id"]
             isOneToOne: false
             referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_follows: {
+        Row: {
+          artist_id: string
+          followed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          artist_id: string
+          followed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          artist_id?: string
+          followed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_follows_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_library: {
+        Row: {
+          added_at: string
+          id: string
+          track_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          track_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          track_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_library_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
             referencedColumns: ["id"]
           },
         ]

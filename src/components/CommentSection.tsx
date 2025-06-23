@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,7 +39,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
     try {
       console.log('Fetching comments for track:', trackId);
       
-      // First fetch main comments with profiles using inner join
+      // First fetch main comments with profiles
       const { data: mainComments, error: mainError } = await supabase
         .from('comments')
         .select(`
@@ -51,7 +50,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!inner (
+          profiles (
             full_name,
             username,
             avatar_url
@@ -76,14 +75,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       // Build comments with replies
       const commentsWithReplies = await Promise.all(
         mainComments.map(async (comment) => {
-          // Since we're using !inner join, profiles should never be null
-          // But let's add a safety check and cast the type properly
+          // Ensure profiles exists
           if (!comment.profiles) {
             console.warn('Comment has no profile data:', comment.id);
             return null;
           }
 
-          const validComment = comment as Comment;
+          const validComment = comment as unknown as Comment;
 
           // Fetch replies for this comment
           const { data: replies, error: repliesError } = await supabase
@@ -96,7 +94,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
               parent_id,
               created_at,
               updated_at,
-              profiles!inner (
+              profiles (
                 full_name,
                 username,
                 avatar_url
@@ -113,7 +111,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           // Filter valid replies
           const validReplies: Comment[] = (replies || [])
             .filter((reply) => reply.profiles !== null)
-            .map(reply => reply as Comment);
+            .map(reply => reply as unknown as Comment);
 
           return {
             ...validComment,
@@ -156,7 +154,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!inner (
+          profiles (
             full_name,
             username,
             avatar_url
@@ -167,7 +165,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       if (error) throw error;
 
       if (data && data.profiles) {
-        const newComment = data as Comment;
+        const newComment = data as unknown as Comment;
         setComments(prev => [newComment, ...prev]);
         toast.success('Comment posted successfully');
       }
@@ -200,7 +198,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!inner (
+          profiles (
             full_name,
             username,
             avatar_url
@@ -211,7 +209,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       if (error) throw error;
 
       if (data && data.profiles) {
-        const newReply = data as Comment;
+        const newReply = data as unknown as Comment;
 
         // Add the reply to the appropriate comment
         setComments(prev => prev.map(comment => 
