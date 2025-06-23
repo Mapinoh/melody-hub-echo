@@ -3,17 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SharedLayout } from '@/components/SharedLayout';
 import { SearchResults } from '@/components/SearchResults';
-import { useSupabaseTracks } from '@/hooks/useSupabaseTracks';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
+import { Input } from '@/components/ui/input';
+import { Search as SearchIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Search = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const [localQuery, setLocalQuery] = useState(query);
   const [tracks, setTracks] = useState([]);
   const [artists, setArtists] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    setLocalQuery(query);
     if (query.trim()) {
       searchContent(query.trim());
     } else {
@@ -66,16 +70,38 @@ const Search = () => {
     }
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (localQuery.trim()) {
+      setSearchParams({ q: localQuery.trim() });
+    }
+  };
+
   return (
     <SharedLayout>
-      <div className="pb-24">
+      <ResponsiveContainer className="py-4 md:py-6 pb-24">
+        {/* Mobile Search Header */}
+        <div className="md:hidden mb-6">
+          <form onSubmit={handleSearch}>
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Input
+                value={localQuery}
+                onChange={(e) => setLocalQuery(e.target.value)}
+                placeholder="What do you want to listen to?"
+                className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:bg-gray-700"
+              />
+            </div>
+          </form>
+        </div>
+
         <SearchResults 
           query={query}
           tracks={tracks}
           artists={artists}
           isLoading={isLoading}
         />
-      </div>
+      </ResponsiveContainer>
     </SharedLayout>
   );
 };
