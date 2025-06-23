@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,7 +39,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
     try {
       console.log('Fetching comments for track:', trackId);
       
-      // First fetch main comments with profiles
+      // First fetch main comments with profiles joined through user_id
       const { data: mainComments, error: mainError } = await supabase
         .from('comments')
         .select(`
@@ -51,7 +50,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!inner (
+          profiles!comments_user_id_fkey (
             full_name,
             username,
             avatar_url
@@ -76,8 +75,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       // Build comments with replies
       const commentsWithReplies = await Promise.all(
         mainComments.map(async (comment) => {
-          // Type assertion since we know profiles exists due to !inner join
-          const validComment = comment as Comment;
+          // Type assertion since we know profiles exists due to the join
+          const validComment = comment as unknown as Comment;
 
           // Fetch replies for this comment
           const { data: replies, error: repliesError } = await supabase
@@ -90,7 +89,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
               parent_id,
               created_at,
               updated_at,
-              profiles!inner (
+              profiles!comments_user_id_fkey (
                 full_name,
                 username,
                 avatar_url
@@ -104,8 +103,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
             // Continue without replies rather than failing
           }
 
-          // Type assertion for replies since we know profiles exists due to !inner join
-          const validReplies: Comment[] = (replies || []).map(reply => reply as Comment);
+          // Type assertion for replies since we know profiles exists due to the join
+          const validReplies: Comment[] = (replies || []).map(reply => reply as unknown as Comment);
 
           return {
             ...validComment,
@@ -114,7 +113,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
         })
       );
 
-      // All comments should be valid at this point due to !inner joins
+      // All comments should be valid at this point
       setComments(commentsWithReplies);
       
     } catch (error: any) {
@@ -147,7 +146,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!inner (
+          profiles!comments_user_id_fkey (
             full_name,
             username,
             avatar_url
@@ -158,7 +157,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       if (error) throw error;
 
       if (data) {
-        const newComment = data as Comment;
+        const newComment = data as unknown as Comment;
         setComments(prev => [newComment, ...prev]);
         toast.success('Comment posted successfully');
       }
@@ -191,7 +190,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
           parent_id,
           created_at,
           updated_at,
-          profiles!inner (
+          profiles!comments_user_id_fkey (
             full_name,
             username,
             avatar_url
@@ -202,7 +201,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ trackId }) => {
       if (error) throw error;
 
       if (data) {
-        const newReply = data as Comment;
+        const newReply = data as unknown as Comment;
 
         // Add the reply to the appropriate comment
         setComments(prev => prev.map(comment => 
