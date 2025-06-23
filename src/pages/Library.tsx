@@ -2,6 +2,7 @@
 import React from 'react';
 import { SharedLayout } from '@/components/SharedLayout';
 import { UserLibrary } from '@/components/UserLibrary';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { useAuth } from '@/hooks/useAuth';
 
 const Library = () => {
@@ -10,25 +11,25 @@ const Library = () => {
   if (!user) {
     return (
       <SharedLayout showMusicPlayer={false}>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-white text-xl">Please log in to view your library</div>
-        </div>
+        <ResponsiveContainer className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-white text-lg md:text-xl text-center px-4">
+            Please log in to view your library
+          </div>
+        </ResponsiveContainer>
       </SharedLayout>
     );
   }
 
   return (
     <SharedLayout>
-      <div className="p-4 md:p-6 pb-24">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Your Library</h1>
-            <p className="text-gray-400">Your liked songs and recently played tracks</p>
-          </div>
-          
-          <UserLibrary />
+      <ResponsiveContainer className="py-4 md:py-6 pb-24">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Your Library</h1>
+          <p className="text-gray-400 text-sm md:text-base">Your liked songs and recently played tracks</p>
         </div>
-      </div>
+        
+        <UserLibrary />
+      </ResponsiveContainer>
     </SharedLayout>
   );
 };

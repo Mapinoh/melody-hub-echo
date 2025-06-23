@@ -17,6 +17,9 @@ import Search from "./pages/Search";
 import Library from "./pages/Library";
 import Discover from "./pages/Discover";
 import Podcasts from "./pages/Podcasts";
+import Admin from "./pages/Admin";
+import Dashboard from "./pages/Dashboard";
+import ArtistDashboard from "./pages/ArtistDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +36,11 @@ const App = () => (
               <Route path="/" element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
                 </ProtectedRoute>
               } />
               <Route path="/upload" element={
@@ -68,6 +76,16 @@ const App = () => (
               <Route path="/podcasts" element={
                 <ProtectedRoute>
                   <Podcasts />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <Admin />
+                </ProtectedRoute>
+              } />
+              <Route path="/artist-dashboard" element={
+                <ProtectedRoute>
+                  <ArtistDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/artist/:artistId" element={
